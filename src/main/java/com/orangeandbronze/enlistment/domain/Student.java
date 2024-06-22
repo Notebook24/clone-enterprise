@@ -1,6 +1,6 @@
 package com.orangeandbronze.enlistment.domain;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 import static org.apache.commons.lang3.Validate.*;
 @Entity
@@ -20,7 +20,7 @@ public class Student {
         notBlank(firstname);
         notBlank(lastname);
         notNull(sections, "sections can't be null");
-        notNull(subjectsTaken);
+        notNull(subjectsTaken, "subjectsTaken can't be null");
         this.studentNumber = studentNumber;
         this.firstname = firstname;
         this.lastname = lastname;
@@ -57,7 +57,7 @@ public class Student {
     }
 
     public void cancel(Section section) {
-        notNull(section);
+        notNull(section, "section can't be null");
         if (sections.contains(section)) {
             sections.remove(section);
             section.decrementNumberOfStudents();

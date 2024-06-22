@@ -1,6 +1,6 @@
 package com.orangeandbronze.enlistment.domain;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
@@ -11,8 +11,8 @@ public class Schedule {
     private final Period period;
 
     public Schedule(Days days, Period period) {
-        notNull(days);
-        notNull(period);
+        notNull(days, "days can't be null");
+        notNull(period, "period can't be null");
         this.days = days;
         this.period = period;
     }

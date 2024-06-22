@@ -1,6 +1,6 @@
 package com.orangeandbronze.enlistment.domain;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.*;
 
 import static org.apache.commons.lang3.Validate.*;
@@ -12,8 +12,8 @@ public class Period {
     private final LocalTime endTime;
 
     public Period(LocalTime startTime, LocalTime endTime) {
-        notNull(startTime);
-        notNull(endTime);
+        notNull(startTime, "startTime can't be null");
+        notNull(endTime, "endTime can't be null");
         isTrue(startTime.isBefore(endTime),
                 "startTime must be before endTime; startTime: " + startTime + " endTime: " + endTime);
         isTrue(!startTime.isBefore(LocalTime.of(8, 30)), "startTime can't be before 8:30am, was: " + startTime);
@@ -25,7 +25,7 @@ public class Period {
     }
 
     private void checkIf30MinIncrement(LocalTime time) {
-        notNull(time);
+        notNull(time, "time can't be null");
         final int minute = time.getMinute();
         if (minute != 0 && minute != 30) {
             throw new InvalidTimeException("should end with ':00' or ':30', was: " + time);

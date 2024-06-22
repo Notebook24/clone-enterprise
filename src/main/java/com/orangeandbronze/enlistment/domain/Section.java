@@ -2,8 +2,8 @@ package com.orangeandbronze.enlistment.domain;
 
 import org.hibernate.annotations.*;
 
-import javax.persistence.*;
-import javax.persistence.Entity;
+import jakarta.persistence.*;
+import jakarta.persistence.Entity;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
@@ -33,11 +33,11 @@ public class Section {
     public Section(String sectionId, Subject subject, Schedule schedule, Room room) {
         notBlank(sectionId,
                 "sectionId can't be null, empty or whitespace ");
-        notNull(subject);
+        notNull(subject, "subject can't be null");
         isTrue(isAlphanumeric(sectionId),
                 "sectionId must be alphanumeric, was: "
                         + sectionId);
-        notNull(room);
+        notNull(room, "room can't be null");
         this.sectionId = sectionId;
         this.subject = subject;
         this.schedule = schedule;
@@ -77,7 +77,7 @@ public class Section {
     }
 
     void checkPrereqs(Collection<Subject> subjectsTaken) {
-        notNull(subjectsTaken);
+        notNull(subjectsTaken, "subjectsTaken can't be null");
         Collection<Subject> copy = new HashSet<>(subjectsTaken); // sets are quicker to search through
         subject.checkPrereqs(copy);
     }

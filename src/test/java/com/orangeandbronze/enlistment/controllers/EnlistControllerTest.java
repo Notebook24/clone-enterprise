@@ -4,7 +4,7 @@ import com.orangeandbronze.enlistment.domain.*;
 import org.hibernate.*;
 import org.junit.jupiter.api.*;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 import static com.orangeandbronze.enlistment.domain.TestUtils.*;

@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.*;
 import org.springframework.web.servlet.view.*;
 
-import javax.persistence.*;
-import javax.transaction.*;
+import jakarta.persistence.*;
+import jakarta.transaction.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;

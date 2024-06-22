@@ -1,6 +1,6 @@
 package com.orangeandbronze.enlistment.domain;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import java.util.*;
 
@@ -19,7 +19,7 @@ public class Room {
         notBlank(name);
         isTrue(isAlphanumeric(name), "roomName must be alphanumeric, was: " + name);
         isTrue(capacity > 0, "capacity must be greater than zero, was: " + capacity);
-        notNull(sections);
+        notNull(sections, "sections can't be null");
         this.name = name;
         this.capacity = capacity;
         this.sections.addAll(sections);
@@ -38,7 +38,7 @@ public class Room {
     }
 
     void addSection(Section newSection) {
-        notNull(newSection);
+        notNull(newSection, "newSection can't be null");
         sections.forEach(currSection -> currSection.checkForScheduleConflict(newSection));
         sections.add(newSection);
     }

@@ -3,15 +3,15 @@ import java.util.Properties
 plugins {
     id 'java'
     id 'groovy'
-    id("org.springframework.boot") version "2.5.6"
+    id("org.springframework.boot") version "3.3.0"
     id("io.spring.dependency-management") version "1.0.11.RELEASE"
-    id("org.unbroken-dome.test-sets") version "4.0.0"
-    id("org.liquibase.gradle") version "2.1.0"
+    id("org.unbroken-dome.test-sets") version "4.1.0"
+    id("org.liquibase.gradle") version "2.2.2"
 }
 
 group = "com.orangeandbronze.enlistment"
 version = "0.0.1-SNAPSHOT"
-var testcontainersVersion = '1.16.3'
+var testcontainersVersion = '1.19.8'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -45,17 +45,15 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     integrationTestImplementation sourceSets.test.output
 
-    liquibaseRuntime("org.liquibase:liquibase-core:4.9.1")
-    liquibaseRuntime("info.picocli:picocli:4.6.3")
-    liquibaseRuntime("org.liquibase:liquibase-groovy-dsl:3.0.2")
-    liquibaseRuntime("org.liquibase.ext:liquibase-hibernate5:4.9.1")
+    liquibaseRuntime('org.liquibase:liquibase-core:4.27.0')
+    liquibaseRuntime('info.picocli:picocli:4.7.6')
+    liquibaseRuntime('org.liquibase:liquibase-groovy-dsl:3.0.3')
+    liquibaseRuntime('org.liquibase.ext:liquibase-hibernate6:4.28.0')
     liquibaseRuntime sourceSets.main.output
-    liquibaseRuntime sourceSets.main.compileClasspath
     liquibaseRuntime sourceSets.main.runtimeClasspath
-    implementation("net.lbruun.springboot:preliquibase-spring-boot-starter:1.1.1")
+    implementation('net.lbruun.springboot:preliquibase-spring-boot-starter:1.5.0')
 
-    implementation 'org.codehaus.groovy:groovy-all:3.0.10'
-    testImplementation("org.spockframework:spock-core:2.1-groovy-3.0")
+    testImplementation("org.spockframework:spock-core:2.4-M4-groovy-4.0")
 }
 
 def prop = new Properties()
@@ -67,21 +65,23 @@ configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor)
     }
-    liquibase {
-        activities {
-            main {
-                changeLogFile 'src/main/resources/db/changelog/db.changelog-master.sql'
-                url  prop.getProperty('spring.datasource.url')
-                username prop.getProperty('spring.datasource.username')
-                password prop.getProperty('spring.datasource.password')
-                driver 'org.postgresql.Driver'
-                referenceUrl  'hibernate:spring:com.orangeandbronze.enlistment.domain?dialect=org.hibernate.dialect.PostgreSQLDialect&hibernate.physical_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy&hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy'
-            }
-        }
-        runList = "main"
-    }
+    liquibaseRuntime.extendsFrom(configurations.runtimeClasspath)
 }
 
-tasks.withType(Test) {
+liquibase {
+    activities {
+        main {
+            changelogFile 'src/main/resources/db/changelog/db.changelog-master.sql'
+            url  prop.getProperty('spring.datasource.url')
+            username prop.getProperty('spring.datasource.username')
+            password prop.getProperty('spring.datasource.password')
+            driver 'org.postgresql.Driver'
+            referenceUrl  'hibernate:spring:com.orangeandbronze.enlistment.domain?dialect=org.hibernate.dialect.PostgreSQLDialect&hibernate.physical_naming_strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl&hibernate.implicit_naming_strategy=org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy'
+        }
+    }
+    runList = "main"
+}
+
+tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }

@@ -1,6 +1,6 @@
 package com.orangeandbronze.enlistment.domain;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 import static org.apache.commons.lang3.Validate.*;
 

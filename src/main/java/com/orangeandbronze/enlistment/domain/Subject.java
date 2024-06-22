@@ -1,6 +1,6 @@
 package com.orangeandbronze.enlistment.domain;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.isAlphanumeric;
@@ -14,7 +14,7 @@ public class Subject {
 
     Subject(String subjectId, Collection<Subject> prerequisites) {
         notBlank(subjectId);
-        notNull(prerequisites);
+        notNull(prerequisites, "prerequisites can't be null");
         isTrue(isAlphanumeric(subjectId), "subjectId must be alphanumeric, was: " + subjectId);
         this.subjectId = subjectId;
         this.prerequisites.addAll(prerequisites);
@@ -26,7 +26,7 @@ public class Subject {
     }
 
     void checkPrereqs(Collection<Subject> subjectsTaken) {
-        notNull(subjectsTaken);
+        notNull(subjectsTaken, "subjectsTaken can't be null");
         Collection<Subject> copySubjectsTaken = new HashSet<>(subjectsTaken); // sets are quicker to search through
         if (!copySubjectsTaken.containsAll(prerequisites)) {
             Collection<Subject> copyOfPrereqs = new HashSet<>(prerequisites);
