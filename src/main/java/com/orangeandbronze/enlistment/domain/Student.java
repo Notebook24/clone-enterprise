@@ -42,7 +42,7 @@ public class Student {
         notNull(newSection,"section can't be null") ;
         sections.forEach(currSection -> checkForConflict(currSection, newSection) );
         newSection.checkPrereqs(subjectsTaken);
-        newSection.lock(); // one thread at a time... this only works if single app instance
+        newSection.lock(); // one thread at a time... this only works on a single section object
         try {
             newSection.incrementNumberOfStudents();
             sections.add(newSection);
