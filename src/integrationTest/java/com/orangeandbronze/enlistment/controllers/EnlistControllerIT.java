@@ -70,10 +70,18 @@ class EnlistControllerIT {
     }
 
     private void assertNumberOfStudentsSuccessfullyEnlistedInDefaultSection(int expectedCount) {
-        int numStudents = jdbcTemplate.queryForObject(
-                "select count(*) from student_sections where sections_section_id = '" +
-                        DEFAULT_SECTION_ID + "'", Integer.class);
-        assertEquals(expectedCount, numStudents);
+        assertAll(
+                () -> {
+                    int numStudentSectionAssociations = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM student_sections WHERE sections_section_id = ?", Integer.class, DEFAULT_SECTION_ID);
+                    assertEquals(expectedCount, numStudentSectionAssociations);
+                },
+                () -> {
+                    int numStudentsInSectionField = jdbcTemplate.queryForObject("SELECT number_of_students FROM section WHERE section_id = ?",
+                            Integer.class, DEFAULT_SECTION_ID);
+                    assertEquals(expectedCount, numStudentsInSectionField);
+                }
+        );
     }
 
     @Test
