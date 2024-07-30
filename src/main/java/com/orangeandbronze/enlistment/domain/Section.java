@@ -120,7 +120,7 @@ public class Section {
 
         Section section = (Section) o;
 
-        return sectionId != null ? sectionId.equals(section.sectionId) : section.sectionId == null;
+        return Objects.equals(sectionId, section.sectionId);
     }
 
     @Override

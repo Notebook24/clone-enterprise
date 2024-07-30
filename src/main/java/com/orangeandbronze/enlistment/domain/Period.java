@@ -2,6 +2,7 @@ package com.orangeandbronze.enlistment.domain;
 
 import jakarta.persistence.*;
 import java.time.*;
+import java.util.Objects;
 
 import static org.apache.commons.lang3.Validate.*;
 
@@ -50,8 +51,8 @@ public class Period {
 
         Period period = (Period) o;
 
-        if (startTime != null ? !startTime.equals(period.startTime) : period.startTime != null) return false;
-        return endTime != null ? endTime.equals(period.endTime) : period.endTime == null;
+        if (!Objects.equals(startTime, period.startTime)) return false;
+        return Objects.equals(endTime, period.endTime);
     }
 
     @Override

@@ -48,7 +48,7 @@ public class Subject {
 
         Subject subject = (Subject) o;
 
-        return subjectId != null ? subjectId.equals(subject.subjectId) : subject.subjectId == null;
+        return Objects.equals(subjectId, subject.subjectId);
     }
 
     @Override

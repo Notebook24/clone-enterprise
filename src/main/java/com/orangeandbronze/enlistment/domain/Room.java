@@ -63,7 +63,7 @@ public class Room {
 
         Room room = (Room) o;
 
-        return name != null ? name.equals(room.name) : room.name == null;
+        return Objects.equals(name, room.name);
     }
 
     @Override
