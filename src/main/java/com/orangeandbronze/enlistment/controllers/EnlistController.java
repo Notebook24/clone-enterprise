@@ -1,7 +1,6 @@
 package com.orangeandbronze.enlistment.controllers;
 
 import com.orangeandbronze.enlistment.domain.*;
-import org.hibernate.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.orm.*;
 import org.springframework.retry.annotation.*;
@@ -66,8 +65,8 @@ class EnlistController {
     }
 
     @PostMapping
-    public String enlistOrCancel(@ModelAttribute Student student, @RequestParam String sectionId,
-                         @RequestParam UserAction userAction) {
+    public String enlistOrCancel(@RequestParam String sectionId,
+                                 @RequestParam UserAction userAction, Model model) {
         return "";
     }
 
