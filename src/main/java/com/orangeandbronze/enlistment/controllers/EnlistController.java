@@ -1,8 +1,6 @@
 package com.orangeandbronze.enlistment.controllers;
 
 import com.orangeandbronze.enlistment.domain.*;
-import org.springframework.beans.factory.annotation.*;
-import org.springframework.orm.*;
 import org.springframework.retry.annotation.*;
 import org.springframework.stereotype.*;
 import org.springframework.ui.*;
@@ -10,14 +8,10 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.*;
 import org.springframework.web.servlet.view.*;
 
-import jakarta.persistence.*;
 import jakarta.transaction.*;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
-
-import static org.apache.commons.lang3.Validate.notNull;
-
 
 @Transactional
 @Controller
@@ -25,12 +19,17 @@ import static org.apache.commons.lang3.Validate.notNull;
 @SessionAttributes("student")
 class EnlistController {
 
-    @Autowired
-    private SectionRepository sectionRepo;
-    @Autowired
-    private StudentRepository studentRepo;
-    @PersistenceContext
-    private EntityManager entityManager;
+    private final SectionRepository sectionRepo;
+    private final StudentRepository studentRepo;
+//    @PersistenceContext
+//    private final EntityManager entityManager;
+
+    EnlistController(SectionRepository sectionRepo, StudentRepository studentRepo) {
+        // no null check for easier testing
+        this.sectionRepo = sectionRepo;
+        this.studentRepo = studentRepo;
+//        this.entityManager = entityManager;
+    }
 
     @ModelAttribute
     public void initStudent(Model model, Integer studentNumber) {
@@ -75,19 +74,6 @@ class EnlistController {
     public String handleException(RedirectAttributes redirectAttrs, EnlistmentException e) {
         redirectAttrs.addFlashAttribute("enlistmentExceptionMessage", e.getMessage());
         return "redirect:enlist";
-    }
-
-
-    void setSectionRepo(SectionRepository sectionRepo) {
-        this.sectionRepo = sectionRepo;
-    }
-
-    void setStudentRepo(StudentRepository studentRepo) {
-        this.studentRepo = studentRepo;
-    }
-
-    void setEntityManager(EntityManager entityManager) {
-        this.entityManager = entityManager;
     }
 
 }

@@ -1,8 +1,6 @@
 package com.orangeandbronze.enlistment.controllers;
 
 import com.orangeandbronze.enlistment.domain.*;
-import com.orangeandbronze.enlistment.domain.Period;
-import org.springframework.beans.factory.annotation.*;
 import org.springframework.stereotype.*;
 import org.springframework.transaction.annotation.*;
 import org.springframework.ui.*;
@@ -18,14 +16,18 @@ import java.util.*;
 @SessionAttributes("admin")
 class SectionsController {
 
-    @Autowired
-    private SubjectRepository subjectRepo;
-    @Autowired
-    private AdminRepository adminRepo;
-    @Autowired
-    private RoomRepository roomRepo;
-    @Autowired
-    private SectionRepository sectionRepo;
+    private final SubjectRepository subjectRepo;
+    private final AdminRepository adminRepo;
+    private final RoomRepository roomRepo;
+    private final SectionRepository sectionRepo;
+
+    public SectionsController(SubjectRepository subjectRepo, AdminRepository adminRepo, RoomRepository roomRepo, SectionRepository sectionRepo) {
+        // no null check for easier testing
+        this.subjectRepo = subjectRepo;
+        this.adminRepo = adminRepo;
+        this.roomRepo = roomRepo;
+        this.sectionRepo = sectionRepo;
+    }
 
     @ModelAttribute("admin")
     public Admin admin(Integer id) {
@@ -55,23 +57,4 @@ class SectionsController {
         redirectAttrs.addFlashAttribute("sectionExceptionMessage", e.getMessage());
         return "redirect:sections";
     }
-
-    void setSubjectRepo(SubjectRepository subjectRepo) {
-        this.subjectRepo = subjectRepo;
-    }
-
-    void setSectionRepo(SectionRepository sectionRepo) {
-        this.sectionRepo = sectionRepo;
-    }
-
-    void setRoomRepo(RoomRepository roomRepo) {
-        this.roomRepo = roomRepo;
-    }
-
-    void setAdminRepo(AdminRepository adminRepo) {
-        this.adminRepo = adminRepo;
-    }
-
-
-
 }
