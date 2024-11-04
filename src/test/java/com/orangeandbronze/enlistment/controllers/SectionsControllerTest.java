@@ -20,7 +20,7 @@ class SectionsControllerTest {
         // When the controller receives the arguments
         // Then
         // - it should retrieve the entities from the db, create a new section
-        // - save the section in the db
+        // - save the section in the db; research ArgumentCaptor & consider using it here
         // - set a flash attribute called "sectionSuccessMessage" with the message "Successfully created new section " + sectionId
         // - return the string value "redirect:sections" to redirect to the GET method
 
