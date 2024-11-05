@@ -47,13 +47,13 @@ class EnlistControllerIT {
 
     }
 
-    private final static int FIRST_STUDENT_ID = 11;
+    private final static int FIRST_STUDENT_NO = 11;
     private final static int NUMBER_OF_STUDENTS = 5;
-    private final static int LAST_STUDENT_NUMBER = FIRST_STUDENT_ID + NUMBER_OF_STUDENTS - 1;
+    private final static int LAST_STUDENT_NUMBER = FIRST_STUDENT_NO + NUMBER_OF_STUDENTS - 1;
 
     private void insertManyStudents() {
         List<Object[]> batchArgs = new ArrayList<>();
-        for (int i = FIRST_STUDENT_ID; i <= LAST_STUDENT_NUMBER; i++) {
+        for (int i = FIRST_STUDENT_NO; i <= LAST_STUDENT_NUMBER; i++) {
             batchArgs.add(new Object[]{i, "firstname", "lastname"});
         }
         jdbcTemplate.batchUpdate("INSERT INTO student(student_number, firstname, lastname) VALUES (?, ?, ?)", batchArgs);
@@ -99,7 +99,7 @@ class EnlistControllerIT {
 
     private void startEnlistmentThreads() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        for (int i = FIRST_STUDENT_ID; i <= LAST_STUDENT_NUMBER; i++) {
+        for (int i = FIRST_STUDENT_NO; i <= LAST_STUDENT_NUMBER; i++) {
             final int studentNo = i;
             new EnslistmentThread(studentRepository.findById(studentNo).orElseThrow(() ->
                     new NoSuchElementException("No student w/ student num " + studentNo + " found in DB.")),
