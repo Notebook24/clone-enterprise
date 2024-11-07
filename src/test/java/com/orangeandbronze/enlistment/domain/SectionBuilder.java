@@ -41,7 +41,7 @@ public class SectionBuilder {
     }
 
     public SectionBuilder room(String roomName) {
-        this.room = new Room(roomName, 10);
+        this.room = newRoom(roomName);
         return this;
     }
 
