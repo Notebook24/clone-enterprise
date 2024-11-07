@@ -7,7 +7,7 @@ public class SectionBuilder {
     private String sectionId = DEFAULT_SECTION_ID;
     private Subject subject = DEFAULT_SUBJECT;
     private Schedule schedule = MTH830to10;
-    private Room room = ROOMX;
+    private Room room = newDefaultRoom();
 
     public SectionBuilder withSectionId(String sectionId) {
         this.sectionId = sectionId;
