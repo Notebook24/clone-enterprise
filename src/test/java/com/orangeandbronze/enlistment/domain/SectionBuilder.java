@@ -15,22 +15,22 @@ public class SectionBuilder {
         this.sectionId = sectionId;
     }
 
-    public SectionBuilder withSectionId(String sectionId) {
+    public SectionBuilder sectionId(String sectionId) {
         this.sectionId = sectionId;
         return this;
     }
 
-    public SectionBuilder withSubject(Subject subject) {
+    public SectionBuilder subject(Subject subject) {
         this.subject = subject;
         return this;
     }
 
-    public SectionBuilder withSchedule(Schedule schedule) {
+    public SectionBuilder schedule(Schedule schedule) {
         this.schedule = schedule;
         return this;
     }
 
-    public SectionBuilder withRoom(Room room) {
+    public SectionBuilder room(Room room) {
         this.room = room;
         return this;
     }
