@@ -8,6 +8,7 @@ public class SectionBuilder {
     private Subject subject = DEFAULT_SUBJECT;
     private Schedule schedule = MTH830to10;
     private Room room = newDefaultRoom();
+    private int noStudents = 0;
 
     public SectionBuilder() {}
 
@@ -55,7 +56,12 @@ public class SectionBuilder {
         return this;
     }
 
+    public SectionBuilder noStudents(int num) {
+        this.noStudents = num;
+        return this;
+    }
+
     public Section build() {
-        return new Section(sectionId, subject, schedule, room);
+        return new Section(sectionId, subject, schedule, room, noStudents);
     }
 }
