@@ -45,6 +45,11 @@ public class SectionBuilder {
         return this;
     }
 
+    public SectionBuilder room(String roomName, int capacity) {
+        this.room = new Room(roomName, capacity);
+        return this;
+    }
+
     public Section build() {
         return new Section(sectionId, subject, schedule, room);
     }
