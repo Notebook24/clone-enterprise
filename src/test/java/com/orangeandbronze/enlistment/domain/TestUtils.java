@@ -39,7 +39,7 @@ public class TestUtils {
     }
 
     public static Section newDefaultSection() {
-        return new Section(DEFAULT_SECTION_ID, DEFAULT_SUBJECT, MTH830to10, new Room("X", 10));
+        return new SectionBuilder().build();
     }
 
     public static Room newDefaultRoom() {
