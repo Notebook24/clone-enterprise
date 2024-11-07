@@ -46,4 +46,8 @@ public class TestUtils {
         return new Room("X", 10);
     }
 
+    public static Room newRoom(String roomName) {
+        return new Room(roomName, 10);
+    }
+
 }
