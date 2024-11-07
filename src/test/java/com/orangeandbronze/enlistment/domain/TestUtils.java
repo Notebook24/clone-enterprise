@@ -13,6 +13,7 @@ public class TestUtils {
     public static final String DEFAULT_SUBJECT_ID = "defaultSubject";
     public static final Subject DEFAULT_SUBJECT = new Subject(DEFAULT_SUBJECT_ID);
     public static final int DEFAULT_STUDENT_NUMBER = 10;
+    public static final Room ROOMX = new Room("X", 10);
     public static final int DEFAULT_FACULTY_NUMBER = 1000;
 //    public static final Faculty DEFAULT_FACULTY = new Faculty(DEFAULT_FACULTY_NUMBER);
 
