@@ -11,6 +11,7 @@ public class TestUtils {
     public static final Schedule TF10to1130 = new Schedule(TF, new Period(LocalTime.of(10, 0), LocalTime.of(11, 30)));
     public static final String DEFAULT_SECTION_ID = "DefaultSection";
     public static final String DEFAULT_SUBJECT_ID = "defaultSubject";
+    public static final String DEFAULT_ROOM_NAME = "DefaultRoom";
     public static final Subject DEFAULT_SUBJECT = new Subject(DEFAULT_SUBJECT_ID);
     public static final int DEFAULT_STUDENT_NUMBER = 10;
     public static final int DEFAULT_FACULTY_NUMBER = 1000;
@@ -43,11 +44,15 @@ public class TestUtils {
     }
 
     public static Room newDefaultRoom() {
-        return new Room("X", 10);
+        return new Room(DEFAULT_ROOM_NAME, 10);
     }
 
     public static Room newRoom(String roomName) {
         return new Room(roomName, 10);
+    }
+
+    public static Room newRoom(int capacity) {
+        return new Room(DEFAULT_ROOM_NAME, capacity);
     }
 
 }
