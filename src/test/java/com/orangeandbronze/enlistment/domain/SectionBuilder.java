@@ -9,6 +9,12 @@ public class SectionBuilder {
     private Schedule schedule = MTH830to10;
     private Room room = newDefaultRoom();
 
+    public SectionBuilder() {}
+
+    public SectionBuilder(String sectionId) {
+        this.sectionId = sectionId;
+    }
+
     public SectionBuilder withSectionId(String sectionId) {
         this.sectionId = sectionId;
         return this;
