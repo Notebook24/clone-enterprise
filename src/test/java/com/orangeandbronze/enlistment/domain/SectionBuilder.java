@@ -25,6 +25,11 @@ public class SectionBuilder {
         return this;
     }
 
+    public SectionBuilder subject(String subjectId) {
+        this.subject = new Subject(subjectId);
+        return this;
+    }
+
     public SectionBuilder schedule(Schedule schedule) {
         this.schedule = schedule;
         return this;
@@ -32,6 +37,11 @@ public class SectionBuilder {
 
     public SectionBuilder room(Room room) {
         this.room = room;
+        return this;
+    }
+
+    public SectionBuilder room(String roomName) {
+        this.room = new Room(roomName, 10);
         return this;
     }
 
