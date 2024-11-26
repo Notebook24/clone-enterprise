@@ -85,7 +85,7 @@ class EnlistControllerIT {
     }
 
     @Test
-    void enlist_concurrent_separate_section_instances_representing_same_record_students_beyond_capacity() throws Exception {
+    void enlist_concurrently_same_section_not_enough_capacity() throws Exception {
 
     }
 
