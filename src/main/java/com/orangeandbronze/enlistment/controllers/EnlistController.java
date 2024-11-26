@@ -1,7 +1,7 @@
 package com.orangeandbronze.enlistment.controllers;
 
 import com.orangeandbronze.enlistment.domain.*;
-import org.springframework.retry.annotation.*;
+import com.orangeandbronze.enlistment.repositories.*;
 import org.springframework.stereotype.*;
 import org.springframework.ui.*;
 import org.springframework.web.bind.annotation.*;

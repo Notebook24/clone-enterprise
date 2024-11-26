@@ -1,5 +1,6 @@
-package com.orangeandbronze.enlistment.domain;
+package com.orangeandbronze.enlistment.repositories;
 
+import com.orangeandbronze.enlistment.domain.*;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.*;
 
