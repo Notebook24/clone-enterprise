@@ -73,12 +73,12 @@ class EnlistControllerIT {
                 () -> {
                     int numStudentSectionAssociations = jdbcTemplate.queryForObject(
                             "SELECT COUNT(*) FROM student_sections WHERE sections_section_id = ?", Integer.class, DEFAULT_SECTION_ID);
-                    assertEquals(expectedCount, numStudentSectionAssociations);
+                    assertEquals(expectedCount, numStudentSectionAssociations, "student_sections wrong count");
                 },
                 () -> {
                     int numStudentsInSectionField = jdbcTemplate.queryForObject("SELECT number_of_students FROM section WHERE section_id = ?",
                             Integer.class, DEFAULT_SECTION_ID);
-                    assertEquals(expectedCount, numStudentsInSectionField);
+                    assertEquals(expectedCount, numStudentsInSectionField, "section.number_of_students wrong count");
                 }
         );
     }
