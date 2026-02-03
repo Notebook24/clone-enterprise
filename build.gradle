@@ -13,11 +13,6 @@ group = "com.orangeandbronze.enlistment"
 version = "0.0.1-SNAPSHOT"
 var testcontainersVersion = '1.20.0'
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
-
 repositories {
     mavenCentral()
 }
