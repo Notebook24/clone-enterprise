@@ -8,6 +8,7 @@ import org.springframework.ui.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.*;
 
+import java.time.LocalTime;
 import java.util.*;
 
 @Transactional
@@ -49,6 +50,10 @@ class SectionsController {
     public String createSection(@RequestParam String sectionId, @RequestParam String subjectId, @RequestParam Days days,
                                 @RequestParam String start, @RequestParam String end, @RequestParam String roomName,
                                 RedirectAttributes redirectAttrs) {
+        Subject subject = subjectRepo.findById(subjectId).orElseThrow();
+        Room room = roomRepo.findById(roomName).orElseThrow();
+        Schedule schedule = new Schedule(days, new Period(LocalTime.parse(start), LocalTime.parse(end)));
+        sectionRepo.save(new Section(sectionId, subject, schedule, room));
         return "";
     }
 
