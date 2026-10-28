@@ -54,11 +54,14 @@ class SectionsController {
                 () -> new NoSuchElementException("no subject found for subjectId " + subjectId));
         Room room = roomRepo.findById(roomName).orElseThrow(
                 () -> new NoSuchElementException("no room found for roomName " + roomName));
-        Schedule schedule = new Schedule(days, new Period(LocalTime.parse(start), LocalTime.parse(end)));
-        sectionRepo.save(new Section(sectionId, subject, schedule, room));
+        sectionRepo.save(new Section(sectionId, subject, toSchedule(days, start, end), room));
         redirectAttrs.addFlashAttribute("sectionSuccessMessage",
                 "Successfully created new section " + sectionId);
         return "redirect:sections";
+    }
+
+    private Schedule toSchedule(Days days, String start, String end) {
+        return new Schedule(days, new Period(LocalTime.parse(start), LocalTime.parse(end)));
     }
 
     @ExceptionHandler(EnlistmentException.class)
