@@ -1,5 +1,6 @@
 package com.orangeandbronze.enlistment.controllers;
 
+import com.orangeandbronze.enlistment.domain.EnlistmentException;
 import com.orangeandbronze.enlistment.domain.Room;
 import com.orangeandbronze.enlistment.domain.Section;
 import com.orangeandbronze.enlistment.repositories.AdminRepository;
@@ -107,6 +108,55 @@ class SectionsControllerTest {
 
         // Then the message names the missing room and nothing is saved
         assertTrue(exception.getMessage().contains("missingRoom"));
+        verify(sectionRepo, never()).save(any());
+    }
+
+    @Test
+    void createSection_with_room_schedule_conflict_propagates_and_saves_nothing() {
+        // Given a room that already hosts another section at the same schedule
+        Room room = newDefaultRoom();
+        new Section("OtherSection", DEFAULT_SUBJECT, MTH830to10, room);
+        when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
+        when(roomRepo.findById(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(room));
+
+        // When a section is created at an overlapping schedule in that room
+        // Then the conflict propagates, so handleException() can show it
+        // (ScheduleConflictException is package-private, so check it by name)
+        EnlistmentException exception = assertThrows(EnlistmentException.class,
+                () -> controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
+                        START, END, DEFAULT_ROOM_NAME, redirectAttrs));
+        assertEquals("ScheduleConflictException", exception.getClass().getSimpleName());
+
+        // And nothing is saved
+        verify(sectionRepo, never()).save(any());
+    }
+
+    @Test
+    void createSection_with_non_alphanumeric_section_id_throws_illegal_argument_and_saves_nothing() {
+        // Given a subject and a room that exist
+        when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
+        when(roomRepo.findById(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(newDefaultRoom()));
+
+        // When the section id is not alphanumeric
+        // Then IllegalArgumentException is thrown; handleException() does not catch it, so the admin sees a 500 page
+        assertThrows(IllegalArgumentException.class,
+                () -> controller.createSection("bad id!", DEFAULT_SUBJECT_ID, MTH,
+                        START, END, DEFAULT_ROOM_NAME, redirectAttrs));
+        verify(sectionRepo, never()).save(any());
+    }
+
+    @Test
+    void createSection_with_period_not_on_30_minute_boundary_throws_and_saves_nothing() {
+        // Given a subject and a room that exist
+        when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
+        when(roomRepo.findById(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(newDefaultRoom()));
+
+        // When the start time is not on :00 or :30
+        // Then InvalidTimeException is thrown (package-private, so check it by name)
+        EnlistmentException exception = assertThrows(EnlistmentException.class,
+                () -> controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
+                        "08:45", END, DEFAULT_ROOM_NAME, redirectAttrs));
+        assertEquals("InvalidTimeException", exception.getClass().getSimpleName());
         verify(sectionRepo, never()).save(any());
     }
 }
