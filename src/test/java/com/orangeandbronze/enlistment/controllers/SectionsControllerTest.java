@@ -62,4 +62,20 @@ class SectionsControllerTest {
                 () -> assertSame(room, saved.getRoom())
         );
     }
+
+    @Test
+    void createSection_sets_success_flash_message_and_redirects() {
+        // Given a subject and a room that exist
+        when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
+        when(roomRepo.findById(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(newDefaultRoom()));
+
+        // When the section is created
+        String view = controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
+                START, END, DEFAULT_ROOM_NAME, redirectAttrs);
+
+        // Then a success message is flashed and the admin is redirected to the GET method
+        verify(redirectAttrs).addFlashAttribute("sectionSuccessMessage",
+                "Successfully created new section " + DEFAULT_SECTION_ID);
+        assertEquals("redirect:sections", view);
+    }
 }
