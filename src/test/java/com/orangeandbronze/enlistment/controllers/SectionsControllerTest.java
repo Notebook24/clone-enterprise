@@ -94,4 +94,19 @@ class SectionsControllerTest {
         assertTrue(exception.getMessage().contains("missingSubject"));
         verify(sectionRepo, never()).save(any());
     }
+
+    @Test
+    void createSection_with_unknown_room_throws_and_saves_nothing() {
+        // Given a subject that exists and a room name that does not
+        when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
+
+        // When a section is created with that room
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
+                        START, END, "missingRoom", redirectAttrs));
+
+        // Then the message names the missing room and nothing is saved
+        assertTrue(exception.getMessage().contains("missingRoom"));
+        verify(sectionRepo, never()).save(any());
+    }
 }
