@@ -2,6 +2,8 @@ package com.orangeandbronze.enlistment.domain;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 import static org.apache.commons.lang3.Validate.notNull;
 
 @Embeddable
@@ -36,7 +38,7 @@ public class Schedule {
         Schedule schedule = (Schedule) o;
 
         if (days != schedule.days) return false;
-        return period == schedule.period;
+        return Objects.equals(period, schedule.period);
     }
 
     @Override
