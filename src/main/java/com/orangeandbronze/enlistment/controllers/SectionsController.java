@@ -52,7 +52,8 @@ class SectionsController {
                                 RedirectAttributes redirectAttrs) {
         Subject subject = subjectRepo.findById(subjectId).orElseThrow(
                 () -> new NoSuchElementException("no subject found for subjectId " + subjectId));
-        Room room = roomRepo.findById(roomName).orElseThrow();
+        Room room = roomRepo.findById(roomName).orElseThrow(
+                () -> new NoSuchElementException("no room found for roomName " + roomName));
         Schedule schedule = new Schedule(days, new Period(LocalTime.parse(start), LocalTime.parse(end)));
         sectionRepo.save(new Section(sectionId, subject, schedule, room));
         redirectAttrs.addFlashAttribute("sectionSuccessMessage",
