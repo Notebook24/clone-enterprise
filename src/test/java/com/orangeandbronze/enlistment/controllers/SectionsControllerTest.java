@@ -14,7 +14,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static com.orangeandbronze.enlistment.domain.Days.MTH;
