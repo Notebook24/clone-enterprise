@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static com.orangeandbronze.enlistment.domain.Days.MTH;
@@ -77,5 +78,20 @@ class SectionsControllerTest {
         verify(redirectAttrs).addFlashAttribute("sectionSuccessMessage",
                 "Successfully created new section " + DEFAULT_SECTION_ID);
         assertEquals("redirect:sections", view);
+    }
+
+    @Test
+    void createSection_with_unknown_subject_throws_and_saves_nothing() {
+        // Given a subject id that is not in the repository
+        // (the mock returns an empty Optional by default)
+
+        // When a section is created with it
+        NoSuchElementException exception = assertThrows(NoSuchElementException.class,
+                () -> controller.createSection(DEFAULT_SECTION_ID, "missingSubject", MTH,
+                        START, END, DEFAULT_ROOM_NAME, redirectAttrs));
+
+        // Then the message names the missing id and nothing is saved
+        assertTrue(exception.getMessage().contains("missingSubject"));
+        verify(sectionRepo, never()).save(any());
     }
 }
