@@ -78,7 +78,6 @@ class EnlistController {
         Section section = sectionRepo.findById(sectionId).orElseThrow(
             () -> new NoSuchElementException("No section for sectionId " + sectionId));
         userAction.act(student, section);
-        student.enlist(section);
         studentRepo.save(student);
         sectionRepo.save(section);
         return "redirect:enlist";
