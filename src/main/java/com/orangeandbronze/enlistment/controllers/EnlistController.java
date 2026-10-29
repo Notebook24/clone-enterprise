@@ -13,6 +13,8 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 
+import jakarta.persistence.EntityManager;
+
 @Transactional
 @Controller
 @RequestMapping("enlist")
@@ -22,13 +24,13 @@ class EnlistController {
     private final SectionRepository sectionRepo;
     private final StudentRepository studentRepo;
 //    @PersistenceContext
-//    private final EntityManager entityManager;
+    private final EntityManager entityManager;
 
-    EnlistController(SectionRepository sectionRepo, StudentRepository studentRepo) {
+    EnlistController(SectionRepository sectionRepo, StudentRepository studentRepo, EntityManager entityManager) {
         // no null check for easier testing
         this.sectionRepo = sectionRepo;
         this.studentRepo = studentRepo;
-//        this.entityManager = entityManager;
+        this.entityManager = entityManager;
     }
 
     @ModelAttribute
@@ -63,10 +65,18 @@ class EnlistController {
         return "enlist";
     }
 
+    @Retryable(retryFor = ObjectOptimisticLockingFailureException.class, maxAttempts = 10)
     @PostMapping
     public String enlistOrCancel(@RequestParam String sectionId,
                                  @RequestParam UserAction userAction, Model model) {
-        return "";
+        Student student = (Student) model.getAttribute("student");
+        student = entityManager.merge(student);
+        model.addAttribute("student", student);
+        Section section = sectionRepo.findById(sectionId).orElseThrow();
+        student.enlist(section);
+        studentRepo.save(student);
+        sectionRepo.save(section);
+        return "redirect:enlist";
     }
 
 
