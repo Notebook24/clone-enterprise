@@ -17,9 +17,6 @@ import static com.orangeandbronze.enlistment.domain.TestUtils.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import jdk.jfr.internal.util.UserDataException;
-
-
 class EnlistControllerTest {
 
     @Test

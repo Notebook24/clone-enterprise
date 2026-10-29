@@ -2,6 +2,9 @@ package com.orangeandbronze.enlistment.controllers;
 
 import com.orangeandbronze.enlistment.domain.*;
 import com.orangeandbronze.enlistment.repositories.*;
+import jakarta.persistence.EntityManager;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.*;
 import org.springframework.ui.*;
 import org.springframework.web.bind.annotation.*;
@@ -13,17 +16,17 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 
-import jakarta.persistence.EntityManager;
-
 @Transactional
 @Controller
 @RequestMapping("enlist")
 @SessionAttributes("student")
 class EnlistController {
 
+    private static final int MIN_STUDENT_NUMBER = 1;
+    private static final int MAX_STUDENT_NUMBER = 3;
+
     private final SectionRepository sectionRepo;
     private final StudentRepository studentRepo;
-//    @PersistenceContext
     private final EntityManager entityManager;
 
     EnlistController(SectionRepository sectionRepo, StudentRepository studentRepo, EntityManager entityManager) {
@@ -39,7 +42,7 @@ class EnlistController {
         if (studentNumber == null && student == null) {
             throw new LoginException("both studentNumber & student are null");
         }
-        if (studentNumber != null && (studentNumber < 1 || studentNumber > 3)) {
+        if (studentNumber != null && (studentNumber < MIN_STUDENT_NUMBER || studentNumber > MAX_STUDENT_NUMBER)) {
             throw new LoginException("studentNumber out of range, was: " + studentNumber);
         }
         if (studentNumber != null) {
@@ -72,7 +75,9 @@ class EnlistController {
         Student student = (Student) model.getAttribute("student");
         student = entityManager.merge(student);
         model.addAttribute("student", student);
-        Section section = sectionRepo.findById(sectionId).orElseThrow();
+        Section section = sectionRepo.findById(sectionId).orElseThrow(
+            () -> new NoSuchElementException("No section for sectionId " + sectionId));
+        userAction.act(student, section);
         student.enlist(section);
         studentRepo.save(student);
         sectionRepo.save(section);
