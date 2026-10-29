@@ -9,6 +9,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.*;
 import org.springframework.boot.test.context.*;
 import org.springframework.jdbc.core.*;
 import org.springframework.test.web.servlet.*;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.*;
 import java.util.*;
@@ -21,6 +27,7 @@ import static com.orangeandbronze.enlistment.domain.TestUtils.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
 @Testcontainers
@@ -41,42 +48,31 @@ class EnlistControllerIT {
     private final static String TEST = "test";
 
     @Container
-    private final PostgreSQLContainer container = new PostgreSQLContainer("postgres:14")
-        .withDatabaseName(TEST).withUsername(TEST). withPassword(TEST);
+    private static final PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:14")
+            .withDatabaseName(TEST).withUsername(TEST).withPassword(TEST);
 
     @DynamicPropertySource
-    private static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", () -> "jdbc:tc:postgresql:14:///" + TEST);
-        registry.add("spring.datasource.username", () -> TEST);
-        registry.add("spring.datasource.password", () -> TEST);
+    static void properties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", container::getJdbcUrl);
+        registry.add("spring.datasource.username", container::getUsername);
+        registry.add("spring.datasource.password", container::getPassword);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
     }
 
     @Test
     void enlist_student_in_section() throws Exception {
         //Given: The DB has an existing student record & section record
-        jdbcTemplate.update("INSERT INTO student (student_number, firstname, lastname) " + 
-            "VALUES (?, ?, ?)", 
-            DEFAULT_STUDENT_NUMBER, "firstname", "lastname");
-        jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)",
-            DEFAULT_ROOM_NAME, 10);
-        jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)",
-            DEFAULT_SUBJECT_ID);
-        jdbcTemplate.update("""
-            INSERT INTO section (section_id, number_of_students, days, 
-                                start_time, end_time, room_name, subject_subject_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                DEFAULT_SECTION_ID, 0, DateTimeSyntax.mth.ORDINAL(),
-                LocalTime.of(9, 0), LocalTime.of(10, 0),
-                DEFAULT_ROOM_NAME, DEFAULT_SUBJECT_ID);
+        insertDefaultStudent();
+        insertNewDefaultSectionWithCapacity(10);
+        Student student = studentRepository.findById(DEFAULT_STUDENT_NUMBER).orElseThrow();
 
         //When: POST method on path "/enlist" is invoked with
             //parameters for sectionId matching the section record in the DB,
             //UserAction is "ENLIST", and student object in session corresponding
             //to the student record in the DB
-        Student student = studentRepository.findBy(DEFAULT_STUDENT_NUMBER).orElseThrow();
         mockMvc.perform(post("/enlist").sessionAttr("student", student)
-                .param("sectionId", DEFAULT_SECTION_ID).param("userAction", ENLIST.name()));
+            .param("sectionId", DEFAULT_SECTION_ID).param("userAction", ENLIST.name()))
+                .andExpect(status().is3xxRedirection());
 
         //Then: new record created in student_sections table,
             //containing corresponding studentNumber & sectionId
@@ -98,6 +94,11 @@ class EnlistControllerIT {
     private final static int NUMBER_OF_STUDENTS = 5;
     private final static int LAST_STUDENT_NUMBER = FIRST_STUDENT_NO + NUMBER_OF_STUDENTS - 1;
 
+    private void insertDefaultStudent() {
+        jdbcTemplate.update("INSERT INTO student (student_number, firstname, lastname) VALUES (?, ?, ?)",
+                DEFAULT_STUDENT_NUMBER, "firstname", "lastname");
+    }
+    
     private void insertManyStudents() {
         List<Object[]> batchArgs = new ArrayList<>();
         for (int i = FIRST_STUDENT_NO; i <= LAST_STUDENT_NUMBER; i++) {
@@ -164,7 +165,7 @@ class EnlistControllerIT {
         CountDownLatch latch = new CountDownLatch(1);
         for (int i = FIRST_STUDENT_NO; i <= LAST_STUDENT_NUMBER; i++) {
             final int studentNo = i;
-            new EnslistmentThread(studentRepository.findById(studentNo).orElseThrow(() ->
+            new EnlistmentThread(studentRepository.findById(studentNo).orElseThrow(() ->
                     new NoSuchElementException("No student w/ student num " + studentNo + " found in DB.")),
                     latch, mockMvc).start();
         }
@@ -172,12 +173,12 @@ class EnlistControllerIT {
         Thread.sleep(5000); // wait time to allow all the threads to finish
     }
 
-    private static class EnslistmentThread extends Thread {
+    private static class EnlistmentThread extends Thread {
         private final Student student;
         private final CountDownLatch latch;
         private final MockMvc mockMvc;
 
-        public EnslistmentThread(Student student, CountDownLatch latch, MockMvc mockMvc) {
+        public EnlistmentThread(Student student, CountDownLatch latch, MockMvc mockMvc) {
             this.student = student;
             this.latch = latch;
             this.mockMvc = mockMvc;

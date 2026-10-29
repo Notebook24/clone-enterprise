@@ -96,11 +96,11 @@ class StudentTest {
             Section section = new SectionBuilder().room(1).build();
             // When they enlist concurrently
             CountDownLatch latch = new CountDownLatch(1);
-            new EnslistmentThread(student1, section, latch).start();
-            new EnslistmentThread(student2, section, latch).start();
-            new EnslistmentThread(student3, section, latch).start();
-            new EnslistmentThread(student4, section, latch).start();
-            new EnslistmentThread(student5, section, latch).start();
+            new EnlistmentThread(student1, section, latch).start();
+            new EnlistmentThread(student2, section, latch).start();
+            new EnlistmentThread(student3, section, latch).start();
+            new EnlistmentThread(student4, section, latch).start();
+            new EnlistmentThread(student5, section, latch).start();
             latch.countDown();
             Thread.sleep(100);
             // Only one should be able to enlist
@@ -108,12 +108,12 @@ class StudentTest {
         }
     }
 
-    private static class EnslistmentThread extends Thread {
+    private static class EnlistmentThread extends Thread {
         private final Student student;
         private final Section section;
         private final CountDownLatch latch;
 
-        public EnslistmentThread(Student student, Section section, CountDownLatch latch) {
+        public EnlistmentThread(Student student, Section section, CountDownLatch latch) {
             this.student = student;
             this.section = section;
             this.latch = latch;
