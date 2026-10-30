@@ -20,8 +20,6 @@ import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import javax.print.attribute.DateTimeSyntax;
-
 import static com.orangeandbronze.enlistment.controllers.UserAction.*;
 import static com.orangeandbronze.enlistment.domain.TestUtils.*;
 
@@ -48,7 +46,7 @@ class EnlistControllerIT {
     private final static String TEST = "test";
 
     @Container
-    private static final PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:14")
+    static final PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:14")
             .withDatabaseName(TEST).withUsername(TEST).withPassword(TEST);
 
     @DynamicPropertySource

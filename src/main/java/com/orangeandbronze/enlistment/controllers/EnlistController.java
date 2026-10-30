@@ -3,8 +3,10 @@ package com.orangeandbronze.enlistment.controllers;
 import com.orangeandbronze.enlistment.domain.*;
 import com.orangeandbronze.enlistment.repositories.*;
 import jakarta.persistence.EntityManager;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.dao.ConcurrencyFailureException;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.stereotype.*;
 import org.springframework.ui.*;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +18,6 @@ import java.util.*;
 import java.util.function.*;
 import java.util.stream.*;
 
-@Transactional
 @Controller
 @RequestMapping("enlist")
 @SessionAttributes("student")
@@ -28,12 +29,14 @@ class EnlistController {
     private final SectionRepository sectionRepo;
     private final StudentRepository studentRepo;
     private final EntityManager entityManager;
+    private final TransactionTemplate transactionTemplate;
 
-    EnlistController(SectionRepository sectionRepo, StudentRepository studentRepo, EntityManager entityManager) {
+    EnlistController(SectionRepository sectionRepo, StudentRepository studentRepo, EntityManager entityManager, TransactionTemplate transactionTemplate) {
         // no null check for easier testing
         this.sectionRepo = sectionRepo;
         this.studentRepo = studentRepo;
         this.entityManager = entityManager;
+        this.transactionTemplate = transactionTemplate;
     }
 
     @ModelAttribute
@@ -68,21 +71,26 @@ class EnlistController {
         return "enlist";
     }
 
-    @Retryable(retryFor = ObjectOptimisticLockingFailureException.class, maxAttempts = 10)
+    @Retryable(retryFor =ConcurrencyFailureException.class, maxAttempts = 10,
+        backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500, random = true))
     @PostMapping
     public String enlistOrCancel(@RequestParam String sectionId,
                                  @RequestParam UserAction userAction, Model model) {
         Student student = (Student) model.getAttribute("student");
-        student = entityManager.merge(student);
-        model.addAttribute("student", student);
-        Section section = sectionRepo.findById(sectionId).orElseThrow(
-            () -> new NoSuchElementException("No section for sectionId " + sectionId));
-        userAction.act(student, section);
-        studentRepo.save(student);
-        sectionRepo.save(section);
+        Student updated = transactionTemplate.execute(status -> {
+            Student managed = entityManager.merge(student);
+            Section section = sectionRepo.findById(sectionId).orElseThrow(
+                    () -> new NoSuchElementException("No section for sectionId " + sectionId));
+            userAction.act(managed, section);
+            studentRepo.save(managed);
+            sectionRepo.save(section);
+            return managed;
+        });
+        // Only touch the model after the transaction commits, so a retry starts
+        // from the original student.
+        model.addAttribute("student", updated);
         return "redirect:enlist";
     }
-
 
     @ExceptionHandler(EnlistmentException.class)
     public String handleException(RedirectAttributes redirectAttrs, EnlistmentException e) {

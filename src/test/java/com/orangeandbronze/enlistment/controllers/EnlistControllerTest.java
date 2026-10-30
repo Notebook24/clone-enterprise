@@ -6,7 +6,9 @@ import com.orangeandbronze.enlistment.repositories.*;
 import jakarta.persistence.EntityManager;
 import org.hibernate.*;
 import org.mockito.ArgumentCaptor;
-import org.springframework.ui.ExtendedModelMap;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.junit.jupiter.api.*;
 import org.springframework.ui.Model;
 
@@ -22,22 +24,31 @@ import static org.mockito.Mockito.*;
 
 class EnlistControllerTest {
 
+    private final SectionRepository sectionRepository = mock(SectionRepository.class);
+    private final StudentRepository studentRepository = mock(StudentRepository.class);
+    private final EntityManager em = mock(EntityManager.class);
+    private final TransactionTemplate transactionTemplate = mock(TransactionTemplate.class);
+    private final EnlistController controller = new EnlistController(sectionRepository, studentRepository, em, transactionTemplate);
+
+    @BeforeEach
+    void runTransactionCallbacksDirectly() {
+        // No real transaction in a unit test: just run the callback.
+        when(transactionTemplate.execute(any())).thenAnswer(invocation ->
+                invocation.<TransactionCallback<?>>getArgument(0).doInTransaction(mock(TransactionStatus.class)));
+    }
+
     @Test
     void enlistOrCancel_enlist_student_in_section() {
         //Given a student in the model and a section in the repository
-        SectionRepository sectionRepository = mock(SectionRepository.class);
+        Student student = newDefaultStudent();
         Section section = newDefaultSection();
-        when(sectionRepository.findById(DEFAULT_SECTION_ID)).thenReturn(Optional.of(section));
-        StudentRepository studentRepository = mock(StudentRepository.class);
-        EntityManager em = mock(EntityManager.class);
-        EnlistController controller = new EnlistController(sectionRepository, studentRepository, em);
         Model model = mock(Model.class);
-        Student student = mock(Student.class);
         when(model.getAttribute("student")).thenReturn(student);
         when(em.merge(student)).thenReturn(student);
+        when(sectionRepository.findById(DEFAULT_SECTION_ID)).thenReturn(Optional.of(section));
 
         //When the student enlists in the section
-        String returnVal = controller.enlistOrCancel(DEFAULT_SECTION_ID, UserAction.ENLIST, model);
+        String returnVal = controller.enlistOrCancel(DEFAULT_SECTION_ID, ENLIST, model);
         
         //Then the student and section are saved, the student is enlisted,
             //and the user is redirected back to the enlist page
@@ -53,13 +64,16 @@ class EnlistControllerTest {
                 //fetch a section object from the database using the sectionId param
                 () -> verify(sectionRepository).findById(DEFAULT_SECTION_ID),
                 //pass the section object into the enlist method of the student object
-                () -> verify(student).enlist(section),
+                () -> assertSame(student, savedStudent.getValue()),
+                () -> assertSame(section, savedSection.getValue()),
+                () -> assertTrue(savedStudent.getValue().getSections().contains(section)),
+                () -> verify(model).addAttribute("student", student),
                 //save student to db
                 () -> verify(studentRepository).save(student),
                 //save section to db
                 () -> verify(sectionRepository).save(section),
                 //return a redirect back to the same "enlist" page
-                () -> assertEquals(returnVal, "redirect:enlist")
+                () -> assertEquals("redirect:enlist", returnVal)
         );
     }
 
