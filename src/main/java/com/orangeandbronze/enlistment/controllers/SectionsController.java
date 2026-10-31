@@ -8,6 +8,7 @@ import org.springframework.ui.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.*;
 
+import java.time.LocalTime;
 import java.util.*;
 
 @Transactional
@@ -49,7 +50,18 @@ class SectionsController {
     public String createSection(@RequestParam String sectionId, @RequestParam String subjectId, @RequestParam Days days,
                                 @RequestParam String start, @RequestParam String end, @RequestParam String roomName,
                                 RedirectAttributes redirectAttrs) {
-        return "";
+        Subject subject = subjectRepo.findById(subjectId).orElseThrow(
+                () -> new NoSuchElementException("no subject found for subjectId " + subjectId));
+        Room room = roomRepo.findById(roomName).orElseThrow(
+                () -> new NoSuchElementException("no room found for roomName " + roomName));
+        sectionRepo.save(new Section(sectionId, subject, toSchedule(days, start, end), room));
+        redirectAttrs.addFlashAttribute("sectionSuccessMessage",
+                "Successfully created new section " + sectionId);
+        return "redirect:sections";
+    }
+
+    private Schedule toSchedule(Days days, String start, String end) {
+        return new Schedule(days, new Period(LocalTime.parse(start), LocalTime.parse(end)));
     }
 
     @ExceptionHandler(EnlistmentException.class)
