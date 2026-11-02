@@ -110,9 +110,9 @@ class EnlistControllerIT {
         jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", roomName, capacity);
         jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", DEFAULT_SUBJECT_ID);
         jdbcTemplate.update(
-                "INSERT INTO section (section_id, number_of_students, days, start_time, end_time, room_name, subject_subject_id, version)" +
-                        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                DEFAULT_SECTION_ID, 0, Days.MTH.ordinal(), LocalTime.of(9, 0), LocalTime.of(10, 0), roomName, DEFAULT_SUBJECT_ID, 0);
+                "INSERT INTO section (section_id, number_of_students, days, start_time, end_time, room_name, subject_subject_id)" +
+                        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                DEFAULT_SECTION_ID, 0, Days.MTH.ordinal(), LocalTime.of(9, 0), LocalTime.of(10, 0), roomName, DEFAULT_SUBJECT_ID);
     }
 
     private void assertNumberOfStudentsSuccessfullyEnlistedInDefaultSection(int expectedCount) {
