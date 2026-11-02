@@ -1,11 +1,8 @@
 package com.orangeandbronze.enlistment.domain;
 
-import org.hibernate.annotations.*;
-
 import jakarta.persistence.*;
 import jakarta.persistence.Entity;
 import java.util.*;
-import java.util.concurrent.locks.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 import static org.apache.commons.lang3.Validate.*;
@@ -22,13 +19,6 @@ public class Section {
     private final Room room;
 
     private int numberOfStudents = 0;
-
-    @Version
-    @ColumnDefault("0")
-    private int version = 0;
-
-    @Transient
-    private final ReentrantLock lock = new ReentrantLock();
 
     public Section(String sectionId, Subject subject, Schedule schedule, Room room) {
         notBlank(sectionId,
@@ -80,16 +70,6 @@ public class Section {
         notNull(subjectsTaken, "subjectsTaken can't be null");
         Collection<Subject> copy = new HashSet<>(subjectsTaken); // sets are quicker to search through
         subject.checkPrereqs(copy);
-    }
-
-    /** Locks this object's ReentrantLock **/
-    void lock() {
-        lock.lock();
-    }
-
-    /** Unlock this object's ReentrantLock **/
-    void unlock() {
-        lock.unlock();
     }
 
     public String getSectionId() {
