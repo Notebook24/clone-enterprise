@@ -45,7 +45,7 @@ class EnlistControllerTest {
         Model model = mock(Model.class);
         when(model.getAttribute("student")).thenReturn(student);
         when(em.merge(student)).thenReturn(student);
-        when(sectionRepository.findById(DEFAULT_SECTION_ID)).thenReturn(Optional.of(section));
+        when(sectionRepository.findByIdForUpdate(DEFAULT_SECTION_ID)).thenReturn(Optional.of(section));
 
         //When the student enlists in the section
         String returnVal = controller.enlistOrCancel(DEFAULT_SECTION_ID, ENLIST, model);
@@ -62,7 +62,7 @@ class EnlistControllerTest {
                 //reattach or refetch the student object to the JPA session
                 () -> verify(em).merge(student),
                 //fetch a section object from the database using the sectionId param
-                () -> verify(sectionRepository).findById(DEFAULT_SECTION_ID),
+                () -> verify(sectionRepository).findByIdForUpdate(DEFAULT_SECTION_ID),
                 //pass the section object into the enlist method of the student object
                 () -> assertSame(student, savedStudent.getValue()),
                 () -> assertSame(section, savedSection.getValue()),
