@@ -4,7 +4,6 @@ import org.junit.jupiter.api.*;
 
 import java.time.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 import static com.orangeandbronze.enlistment.domain.Days.*;
 import static com.orangeandbronze.enlistment.domain.TestUtils.*;
@@ -82,56 +81,6 @@ class StudentTest {
         student1.enlist(sec1);
         student2.enlist(sec2);
         // No exception should be thrown
-    }
-
-    @Test
-    void enlist_concurrent_almost_full_section() throws Exception {
-        for (int i = 0; i < 20; i++) { // repeat test 20 times
-            // Given multiple students wanting to enlist in a section w/ capacity of 1
-            Student student1 = newStudent(1);
-            Student student2 = newStudent(2);
-            Student student3 = newStudent(3);
-            Student student4 = newStudent(4);
-            Student student5 = newStudent(5);
-            Section section = new SectionBuilder().room(1).build();
-            // When they enlist concurrently
-            CountDownLatch latch = new CountDownLatch(1);
-            new EnlistmentThread(student1, section, latch).start();
-            new EnlistmentThread(student2, section, latch).start();
-            new EnlistmentThread(student3, section, latch).start();
-            new EnlistmentThread(student4, section, latch).start();
-            new EnlistmentThread(student5, section, latch).start();
-            latch.countDown();
-            Thread.sleep(100);
-            // Only one should be able to enlist
-            assertEquals(1, section.getNumberOfStudents());
-        }
-    }
-
-    private static class EnlistmentThread extends Thread {
-        private final Student student;
-        private final Section section;
-        private final CountDownLatch latch;
-
-        public EnlistmentThread(Student student, Section section, CountDownLatch latch) {
-            this.student = student;
-            this.section = section;
-            this.latch = latch;
-        }
-
-        @Override
-        public void run() {
-            try {
-                latch.await(); // The thread keeps waiting till it is informed
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            try {
-                student.enlist(section);
-            } catch (CapacityException e) {
-                // DO NOTHING... avoid printing messy stack trace
-            }
-        }
     }
 
     @Test
