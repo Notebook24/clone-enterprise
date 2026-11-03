@@ -3,9 +3,6 @@ package com.orangeandbronze.enlistment.controllers;
 import com.orangeandbronze.enlistment.domain.*;
 import com.orangeandbronze.enlistment.repositories.*;
 import jakarta.persistence.EntityManager;
-import org.springframework.dao.ConcurrencyFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.stereotype.*;
 import org.springframework.ui.*;
@@ -71,15 +68,13 @@ class EnlistController {
         return "enlist";
     }
 
-    @Retryable(retryFor =ConcurrencyFailureException.class, maxAttempts = 10,
-        backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500, random = true))
     @PostMapping
     public String enlistOrCancel(@RequestParam String sectionId,
                                  @RequestParam UserAction userAction, Model model) {
         Student student = (Student) model.getAttribute("student");
         Student updated = transactionTemplate.execute(status -> {
             Student managed = entityManager.merge(student);
-            Section section = sectionRepo.findById(sectionId).orElseThrow(
+            Section section = sectionRepo.findByIdForUpdate(sectionId).orElseThrow(
                     () -> new NoSuchElementException("No section for sectionId " + sectionId));
             userAction.act(managed, section);
             studentRepo.save(managed);

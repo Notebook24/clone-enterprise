@@ -110,9 +110,9 @@ class EnlistControllerIT {
         jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", roomName, capacity);
         jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", DEFAULT_SUBJECT_ID);
         jdbcTemplate.update(
-                "INSERT INTO section (section_id, number_of_students, days, start_time, end_time, room_name, subject_subject_id, version)" +
-                        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                DEFAULT_SECTION_ID, 0, Days.MTH.ordinal(), LocalTime.of(9, 0), LocalTime.of(10, 0), roomName, DEFAULT_SUBJECT_ID, 0);
+                "INSERT INTO section (section_id, number_of_students, days, start_time, end_time, room_name, subject_subject_id)" +
+                        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                DEFAULT_SECTION_ID, 0, Days.MTH.ordinal(), LocalTime.of(9, 0), LocalTime.of(10, 0), roomName, DEFAULT_SUBJECT_ID);
     }
 
     private void assertNumberOfStudentsSuccessfullyEnlistedInDefaultSection(int expectedCount) {
@@ -157,18 +157,33 @@ class EnlistControllerIT {
         assertNumberOfStudentsSuccessfullyEnlistedInDefaultSection(NUMBER_OF_STUDENTS);
     }
 
-
-
     private void startEnlistmentThreads() throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(NUMBER_OF_STUDENTS);
         CountDownLatch latch = new CountDownLatch(1);
-        for (int i = FIRST_STUDENT_NO; i <= LAST_STUDENT_NUMBER; i++) {
-            final int studentNo = i;
-            new EnlistmentThread(studentRepository.findById(studentNo).orElseThrow(() ->
-                    new NoSuchElementException("No student w/ student num " + studentNo + " found in DB.")),
-                    latch, mockMvc).start();
+        List<Future<?>> futures = new ArrayList<>();
+        try {
+            for (int i = FIRST_STUDENT_NO; i <= LAST_STUDENT_NUMBER; i++) {
+                final int studentNo = i;
+                Student student = studentRepository.findById(studentNo).orElseThrow(() ->
+                    new NoSuchElementException("No student w/ student num " + studentNo + " found in DB."));
+                futures.add(pool.submit(() -> {
+                    latch.await(); // all threads wait here until released together
+                    return mockMvc.perform(post("/enlist").sessionAttr("student", student)
+                            .param("sectionId", DEFAULT_SECTION_ID)
+                            .param("userAction", ENLIST.name()));
+                }));
+            }
+            latch.countDown();
+            for (Future<?> f : futures) {
+                try {
+                    f.get(30, TimeUnit.SECONDS); // waits for the actual request to finish
+                } catch (ExecutionException e) {
+                    // A capacity rejection may surface as an exception; the DB assertions decide pass/fail.
+                }
+            }
+        } finally {
+            pool.shutdownNow();
         }
-        latch.countDown();
-        Thread.sleep(5000); // wait time to allow all the threads to finish
     }
 
     private static class EnlistmentThread extends Thread {
