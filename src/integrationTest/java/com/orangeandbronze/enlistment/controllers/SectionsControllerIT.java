@@ -54,7 +54,9 @@ class SectionsControllerIT  {
 
     @Test
     void createSection_save_to_db() throws Exception {
-        // Given: Admin in session, but NO subject or room in DB yet
+        // Given: Subject and Room exist in DB, and an admin is in session
+        jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", DEFAULT_SUBJECT_ID);
+        jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", DEFAULT_ROOM_NAME, 10);
         Admin admin = mock(Admin.class);
 
         // When: POST /sections with valid parameters
@@ -70,14 +72,13 @@ class SectionsControllerIT  {
                 .andExpect(redirectedUrl("sections"))
                 .andExpect(flash().attribute("sectionSuccessMessage", "Successfully created new section " + DEFAULT_SECTION_ID));
 
-        // Then: Rows exist in section and room_sections
+        // Then: Both section table and room_sections join table are verified
         assertAll(
                 () -> {
                     Integer sectionCount = jdbcTemplate.queryForObject(
                             "SELECT COUNT(*) FROM section WHERE section_id = ? " +
                                     "AND subject_subject_id = ? " +
-                                    "AND days = ? " +
-                                    "AND start_time = ? " +
+                                    "AND days = ? AND start_time = ? " +
                                     "AND end_time = ? " +
                                     "AND room_name = ?",
                             Integer.class, DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID,
@@ -89,8 +90,7 @@ class SectionsControllerIT  {
                 },
                 () -> {
                     Integer roomSectionCount = jdbcTemplate.queryForObject(
-                            "SELECT COUNT(*) FROM room_sections WHERE room_name = ? " +
-                                    "AND sections_section_id = ?",
+                            "SELECT COUNT(*) FROM room_sections WHERE room_name = ? AND sections_section_id = ?",
                             Integer.class, DEFAULT_ROOM_NAME, DEFAULT_SECTION_ID);
                     assertEquals(1, roomSectionCount, "room_sections link does not exist");
                 }
