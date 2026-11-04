@@ -55,8 +55,8 @@ class SectionsControllerIT  {
     @Test
     void createSection_save_to_db() throws Exception {
         // Given: Subject and Room exist in DB, and an admin is in session
-        jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", DEFAULT_SUBJECT_ID);
-        jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", DEFAULT_ROOM_NAME, 10);
+        insertDefaultSubject();
+        insertDefaultRoom();
         Admin admin = mock(Admin.class);
 
         // When: POST /sections with valid parameters
@@ -73,26 +73,41 @@ class SectionsControllerIT  {
                 .andExpect(flash().attribute("sectionSuccessMessage", "Successfully created new section " + DEFAULT_SECTION_ID));
 
         // Then: Both section table and room_sections join table are verified
+        assertSectionAndRoomSectionExist(DEFAULT_SECTION_ID,
+                DEFAULT_SUBJECT_ID,
+                Days.MTH,
+                LocalTime.of(8, 30),
+                LocalTime.of(10, 0),
+                DEFAULT_ROOM_NAME);
+    }
+
+    private void insertDefaultSubject() {
+        jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", DEFAULT_SUBJECT_ID);
+    }
+
+    private void insertDefaultRoom() {
+        jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", DEFAULT_ROOM_NAME, 10);
+    }
+
+    private void assertSectionAndRoomSectionExist(String sectionId, String subjectId, Days days,
+                                                  LocalTime start, LocalTime end, String roomName) {
         assertAll(
                 () -> {
-                    Integer sectionCount = jdbcTemplate.queryForObject(
+                    Integer count = jdbcTemplate.queryForObject(
                             "SELECT COUNT(*) FROM section WHERE section_id = ? " +
                                     "AND subject_subject_id = ? " +
-                                    "AND days = ? AND start_time = ? " +
+                                    "AND days = ? " +
+                                    "AND start_time = ? " +
                                     "AND end_time = ? " +
                                     "AND room_name = ?",
-                            Integer.class, DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID,
-                            Days.MTH.ordinal(),
-                            LocalTime.of(8, 30),
-                            LocalTime.of(10, 0),
-                            DEFAULT_ROOM_NAME);
-                    assertEquals(1, sectionCount, "section row does not exist with expected values");
+                            Integer.class, sectionId, subjectId, days.ordinal(), start, end, roomName);
+                    assertEquals(1, count, "section table row does not exist with expected values");
                 },
                 () -> {
-                    Integer roomSectionCount = jdbcTemplate.queryForObject(
+                    Integer count = jdbcTemplate.queryForObject(
                             "SELECT COUNT(*) FROM room_sections WHERE room_name = ? AND sections_section_id = ?",
-                            Integer.class, DEFAULT_ROOM_NAME, DEFAULT_SECTION_ID);
-                    assertEquals(1, roomSectionCount, "room_sections link does not exist");
+                            Integer.class, roomName, sectionId);
+                    assertEquals(1, count, "room_sections link does not exist");
                 }
         );
     }
