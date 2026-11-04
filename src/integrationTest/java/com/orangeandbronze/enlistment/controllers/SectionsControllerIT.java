@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -53,7 +54,47 @@ class SectionsControllerIT  {
 
     @Test
     void createSection_save_to_db() throws Exception {
+        // Given: Admin in session, but NO subject or room in DB yet
+        Admin admin = mock(Admin.class);
 
+        // When: POST /sections with valid parameters
+        mockMvc.perform(post("/sections")
+                        .sessionAttr("admin", admin)
+                        .param("sectionId", DEFAULT_SECTION_ID)
+                        .param("subjectId", DEFAULT_SUBJECT_ID)
+                        .param("days", Days.MTH.name())
+                        .param("start", "08:30")
+                        .param("end", "10:00")
+                        .param("roomName", DEFAULT_ROOM_NAME))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("sections"))
+                .andExpect(flash().attribute("sectionSuccessMessage", "Successfully created new section " + DEFAULT_SECTION_ID));
+
+        // Then: Rows exist in section and room_sections
+        assertAll(
+                () -> {
+                    Integer sectionCount = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM section WHERE section_id = ? " +
+                                    "AND subject_subject_id = ? " +
+                                    "AND days = ? " +
+                                    "AND start_time = ? " +
+                                    "AND end_time = ? " +
+                                    "AND room_name = ?",
+                            Integer.class, DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID,
+                            Days.MTH.ordinal(),
+                            LocalTime.of(8, 30),
+                            LocalTime.of(10, 0),
+                            DEFAULT_ROOM_NAME);
+                    assertEquals(1, sectionCount, "section row does not exist with expected values");
+                },
+                () -> {
+                    Integer roomSectionCount = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM room_sections WHERE room_name = ? " +
+                                    "AND sections_section_id = ?",
+                            Integer.class, DEFAULT_ROOM_NAME, DEFAULT_SECTION_ID);
+                    assertEquals(1, roomSectionCount, "room_sections link does not exist");
+                }
+        );
     }
 
 }
