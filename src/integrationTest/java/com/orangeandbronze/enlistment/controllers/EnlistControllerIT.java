@@ -85,7 +85,22 @@ class EnlistControllerIT {
 
     @Test
     void cancel_student_in_section() throws Exception {
+        //Given: The DB has a student enlisted in an existing section
+        insertDefaultStudent();
+        insertNewDefaultSectionWithCapacity(10);
+        setDefaultSectionNumberOfStudents(1);
+        insertStudentSectionAssociation(DEFAULT_STUDENT_NUMBER, DEFAULT_SECTION_ID);
+        Student student = studentRepository.findById(DEFAULT_STUDENT_NUMBER).orElseThrow();
 
+        //When: POST method on path "/enlist" is invoked with the sectionId,
+            //UserAction "CANCEL", and the student object in the session
+        mockMvc.perform(post("/enlist").sessionAttr("student", student)
+            .param("sectionId", DEFAULT_SECTION_ID).param("userAction", CANCEL.name()))
+                .andExpect(status().is3xxRedirection());
+
+        //Then: the student_sections row is gone and the section count is zero
+        assertStudentIsNotEnlistedInDefaultSection();
+        assertNumberOfStudentsSuccessfullyEnlistedInDefaultSection(0);
     }
 
     private final static int FIRST_STUDENT_NO = 11;
@@ -115,6 +130,17 @@ class EnlistControllerIT {
                 DEFAULT_SECTION_ID, 0, Days.MTH.ordinal(), LocalTime.of(9, 0), LocalTime.of(10, 0), roomName, DEFAULT_SUBJECT_ID);
     }
 
+    private void setDefaultSectionNumberOfStudents(int numberOfStudents) {
+        jdbcTemplate.update("UPDATE section SET number_of_students = ? WHERE section_id = ?",
+                numberOfStudents, DEFAULT_SECTION_ID);
+    }
+
+    private void insertStudentSectionAssociation(int studentNumber, String sectionId) {
+        jdbcTemplate.update(
+                "INSERT INTO student_sections (student_student_number, sections_section_id) VALUES (?, ?)",
+                studentNumber, sectionId);
+    }
+
     private void assertNumberOfStudentsSuccessfullyEnlistedInDefaultSection(int expectedCount) {
         assertAll(
                 () -> {
@@ -128,6 +154,13 @@ class EnlistControllerIT {
                     assertEquals(expectedCount, numStudentsInSectionField, "section.number_of_students wrong count");
                 }
         );
+    }
+
+    private void assertStudentIsNotEnlistedInDefaultSection() {
+        int associationCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM student_sections WHERE student_student_number = ? AND sections_section_id = ?",
+                Integer.class, DEFAULT_STUDENT_NUMBER, DEFAULT_SECTION_ID);
+        assertEquals(0, associationCount, "student_sections row still exists");
     }
 
     @Test
