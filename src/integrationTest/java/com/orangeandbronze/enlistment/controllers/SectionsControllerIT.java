@@ -8,6 +8,8 @@ import org.testcontainers.junit.jupiter.*;
 
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.IntConsumer;
 
 import static com.orangeandbronze.enlistment.domain.Days.MTH;
 import static com.orangeandbronze.enlistment.domain.TestUtils.*;
@@ -105,7 +107,7 @@ class SectionsControllerIT  {
                 .andExpect(redirectedUrl("sections"))
                 .andExpect(flash().attributeExists("sectionExceptionMessage"));
 
-        // Then: Confliction section not saved,and total section count remains 1
+        // Then: Conflicting section not saved, and total section count remains unchanged
         assertAll(
                 () -> {
                     Integer count = jdbcTemplate.queryForObject(
@@ -121,6 +123,45 @@ class SectionsControllerIT  {
                     Integer countAfter = jdbcTemplate.queryForObject(
                             "SELECT COUNT(*) FROM section", Integer.class);
                     assertEquals(countBefore, countAfter, "section table count should remain unchanged");
+                }
+        );
+    }
+
+    @Test
+    void createSection_concurrently_same_room_overlapping_schedule() throws Exception {
+        // Given: Subject and Room exist in DB
+        insertDefaultSubject();
+        insertDefaultRoom();
+        Admin admin = mock(Admin.class);
+        final int THREADS = 5;
+
+        // When: N threads create sections with different IDs and overlapping schedules in the same room
+        startSectionThreads(THREADS, i -> {
+            try {
+                mockMvc.perform(post("/sections")
+                        .sessionAttr("admin", admin)
+                        .param("sectionId", "SEC" + i)
+                        .param("subjectId", DEFAULT_SUBJECT_ID)
+                        .param("days", Days.MTH.name())
+                        .param("start", "08:30")
+                        .param("end", "10:00")
+                        .param("roomName", DEFAULT_ROOM_NAME));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Then: exactly one section is saved in the room
+        assertAll(
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM section WHERE room_name = ?", Integer.class, DEFAULT_ROOM_NAME);
+                    assertEquals(1, count, "room should only have 1 section saved");
+                },
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM room_sections WHERE room_name = ?", Integer.class, DEFAULT_ROOM_NAME);
+                    assertEquals(1, count, "room_sections should only have 1 link");
                 }
         );
     }
@@ -173,6 +214,31 @@ class SectionsControllerIT  {
                     assertEquals(1, count, "room_sections link does not exist");
                 }
         );
+    }
+
+    private void startSectionThreads(int threadCount, IntConsumer action) throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Future<?>> futures = new ArrayList<>();
+        try {
+            for (int i = 0; i < threadCount; i++) {
+                final int index = i;
+                futures.add(pool.submit(() -> {
+                    latch.await();
+                    action.accept(index);
+                    return null;
+                }));
+            }
+            latch.countDown();
+            for (Future<?> f : futures) {
+                try {
+                    f.get(30, TimeUnit.SECONDS);
+                } catch (ExecutionException ignored) {
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
 }
