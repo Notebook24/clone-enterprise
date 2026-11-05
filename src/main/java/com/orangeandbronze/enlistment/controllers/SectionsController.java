@@ -2,6 +2,7 @@ package com.orangeandbronze.enlistment.controllers;
 
 import com.orangeandbronze.enlistment.domain.*;
 import com.orangeandbronze.enlistment.repositories.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.*;
 import org.springframework.transaction.annotation.*;
 import org.springframework.ui.*;
@@ -72,6 +73,12 @@ class SectionsController {
     @ExceptionHandler(EnlistmentException.class)
     public String handleException(RedirectAttributes redirectAttrs, EnlistmentException e) {
         redirectAttrs.addFlashAttribute("sectionExceptionMessage", e.getMessage());
+        return "redirect:sections";
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public String handleDataIntegrityViolation(RedirectAttributes redirectAttrs) {
+        redirectAttrs.addFlashAttribute("sectionExceptionMessage", "Section already exists or violates constraint");
         return "redirect:sections";
     }
 }
