@@ -175,7 +175,7 @@ class SectionsControllerIT  {
             jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", "ROOM" + i, 10);
         }
         Admin admin = mock(Admin.class);
-        final String duplicateId = "DUPLICATE_ID";
+        final String duplicateId = "DUPLICATEID";
 
         // When: N threads concurrently create a section with the same ID (each with their own room/subject)
         startSectionThreads(THREADS, i -> {
@@ -205,12 +205,57 @@ class SectionsControllerIT  {
                             "SELECT subject_subject_id, room_name FROM section WHERE section_id = ?", duplicateId);
                     String subj = (String) row.get("subject_subject_id");
                     String room = (String) row.get("room_name");
-                    assertEquals(subj.replace("SUBJ", ""), room.replace("ROOM", ""), "data must belong to one request (no mixed fields)");
+                    assertEquals(subj.replace("SUBJ", ""), room.replace("ROOM", ""),
+                            "data must belong to one request (no mixed fields)");
                 },
                 () -> {
                     Integer count = jdbcTemplate.queryForObject(
                             "SELECT COUNT(*) FROM room_sections WHERE sections_section_id = ?", Integer.class, duplicateId);
                     assertEquals(1, count, "only one room_sections link should exist for the ID");
+                }
+        );
+    }
+
+    @Test
+    void createSection_concurrently_same_room_non_overlapping_schedule() throws Exception {
+        // Given: Subject and Room in DB
+        insertDefaultSubject();
+        insertDefaultRoom();
+        Admin admin = mock(Admin.class);
+        String[][] slots = {
+                {"08:30", "10:00"},
+                {"10:00", "11:30"},
+                {"11:30", "13:00"}
+        };
+        final int THREADS = slots.length;
+
+        // When: N threads concurrently create sections with non-overlapping schedules in the same room
+        startSectionThreads(THREADS, i -> {
+            try {
+                mockMvc.perform(post("/sections")
+                        .sessionAttr("admin", admin)
+                        .param("sectionId", "NONOVERLAP" + i)
+                        .param("subjectId", DEFAULT_SUBJECT_ID)
+                        .param("days", Days.MTH.name())
+                        .param("start", slots[i][0])
+                        .param("end", slots[i][1])
+                        .param("roomName", DEFAULT_ROOM_NAME));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Then: all N sections are saved in the room
+        assertAll(
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM section WHERE room_name = ?", Integer.class, DEFAULT_ROOM_NAME);
+                    assertEquals(THREADS, count, "all valid non-overlapping sections should be saved");
+                },
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM room_sections WHERE room_name = ?", Integer.class, DEFAULT_ROOM_NAME);
+                    assertEquals(THREADS, count, "room_sections must link all created sections");
                 }
         );
     }
