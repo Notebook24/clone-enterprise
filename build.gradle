@@ -79,4 +79,6 @@ liquibase {
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
+    systemProperty 'net.bytebuddy.experimental', 'true'
+    systemProperty 'spring.classformat.ignore', 'true'
 }
