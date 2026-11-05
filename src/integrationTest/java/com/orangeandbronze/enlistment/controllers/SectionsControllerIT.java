@@ -81,12 +81,75 @@ class SectionsControllerIT  {
                 DEFAULT_ROOM_NAME);
     }
 
+    @Test
+    void createSection_overlaps_schedule() throws Exception {
+        // Given: Subject, Room, and existing section occupies 8:30 - 10:00 on MTH in a room
+        insertDefaultSubject();
+        insertDefaultRoom();
+        insertDefaultSection();
+
+        Admin admin = mock(Admin.class);
+        String conflictingSectionId = "ConflictingSection";
+        int countBefore = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM section", Integer.class);
+
+        // When: POST /sections with overlapping schedule in same room (9:00 - 10:30)
+        mockMvc.perform(post("/sections")
+                        .sessionAttr("admin", admin)
+                        .param("sectionId", conflictingSectionId)
+                        .param("subjectId", DEFAULT_SUBJECT_ID)
+                        .param("days", Days.MTH.name())
+                        .param("start", "09:00")
+                        .param("end", "10:30")
+                        .param("roomName", DEFAULT_ROOM_NAME))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("sections"))
+                .andExpect(flash().attributeExists("sectionExceptionMessage"));
+
+        // Then: Confliction section not saved,and total section count remains 1
+        assertAll(
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM section WHERE section_id = ?", Integer.class, conflictingSectionId);
+                    assertEquals(0, count, "conflicting section was unexpectedly saved to section table");
+                },
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM room_sections WHERE sections_section_id = ?", Integer.class, conflictingSectionId);
+                    assertEquals(0, count, "conflicting section was unexpectedly linked in room_sections");
+                },
+                () -> {
+                    Integer countAfter = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM section", Integer.class);
+                    assertEquals(countBefore, countAfter, "section table count should remain unchanged");
+                }
+        );
+    }
+
     private void insertDefaultSubject() {
         jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", DEFAULT_SUBJECT_ID);
     }
 
     private void insertDefaultRoom() {
         jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", DEFAULT_ROOM_NAME, 10);
+    }
+
+    private void insertDefaultSection() {
+        jdbcTemplate.update(
+                "INSERT INTO section (section_id, " +
+                        "number_of_students, " +
+                        "days, " +
+                        "start_time, " +
+                        "end_time, " +
+                        "room_name, " +
+                        "subject_subject_id) " +
+                        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                DEFAULT_SECTION_ID, 0, Days.MTH.ordinal(),
+                LocalTime.of(8, 30), LocalTime.of(10, 0),
+                DEFAULT_ROOM_NAME, DEFAULT_SUBJECT_ID);
+
+        jdbcTemplate.update(
+                "INSERT INTO room_sections (room_name, sections_section_id) VALUES (?, ?)",
+                DEFAULT_ROOM_NAME, DEFAULT_SECTION_ID);
     }
 
     private void assertSectionAndRoomSectionExist(String sectionId, String subjectId, Days days,
