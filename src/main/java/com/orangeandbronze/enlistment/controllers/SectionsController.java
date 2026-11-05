@@ -50,6 +50,11 @@ class SectionsController {
     public String createSection(@RequestParam String sectionId, @RequestParam String subjectId, @RequestParam Days days,
                                 @RequestParam String start, @RequestParam String end, @RequestParam String roomName,
                                 RedirectAttributes redirectAttrs) {
+
+        if (sectionRepo.existsById(sectionId)) {
+            throw new DuplicateSectionException("Section with id " + sectionId + " already exists");
+        }
+
         Subject subject = subjectRepo.findById(subjectId).orElseThrow(
                 () -> new NoSuchElementException("no subject found for subjectId " + subjectId));
         Room room = roomRepo.findById(roomName).orElseThrow(
