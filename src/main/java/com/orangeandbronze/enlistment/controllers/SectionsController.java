@@ -57,7 +57,7 @@ class SectionsController {
 
         Subject subject = subjectRepo.findById(subjectId).orElseThrow(
                 () -> new NoSuchElementException("no subject found for subjectId " + subjectId));
-        Room room = roomRepo.findById(roomName).orElseThrow(
+        Room room = roomRepo.findByIdForUpdate(roomName).orElseThrow(
                 () -> new NoSuchElementException("no room found for roomName " + roomName));
         sectionRepo.save(new Section(sectionId, subject, toSchedule(days, start, end), room));
         redirectAttrs.addFlashAttribute("sectionSuccessMessage",
