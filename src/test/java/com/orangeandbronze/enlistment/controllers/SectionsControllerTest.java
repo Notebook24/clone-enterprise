@@ -1,5 +1,6 @@
 package com.orangeandbronze.enlistment.controllers;
 
+import com.orangeandbronze.enlistment.domain.DuplicateSectionException;
 import com.orangeandbronze.enlistment.domain.EnlistmentException;
 import com.orangeandbronze.enlistment.domain.Room;
 import com.orangeandbronze.enlistment.domain.Section;
@@ -157,6 +158,19 @@ class SectionsControllerTest {
                 () -> controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
                         "08:45", END, DEFAULT_ROOM_NAME, redirectAttrs));
         assertEquals("InvalidTimeException", exception.getClass().getSimpleName());
+        verify(sectionRepo, never()).save(any());
+    }
+
+    @Test
+    void createSection_with_existing_section_id_throws_and_saves_nothing() {
+        // Given a section id that already exists in the repository
+        when(sectionRepo.existsById(DEFAULT_SECTION_ID)).thenReturn(true);
+
+        // When creating a section with that existing id
+        // Then DuplicateSectionException is thrown and nothing is saved
+        assertThrows(DuplicateSectionException.class,
+                () -> controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
+                        START, END, DEFAULT_ROOM_NAME, redirectAttrs));
         verify(sectionRepo, never()).save(any());
     }
 }
