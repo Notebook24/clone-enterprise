@@ -166,6 +166,55 @@ class SectionsControllerIT  {
         );
     }
 
+    @Test
+    void createSection_concurrently_same_id() throws Exception {
+        // Given: Multiple subjects and rooms in DB
+        final int THREADS = 5;
+        for (int i = 0; i < THREADS; i++) {
+            jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", "SUBJ" + i);
+            jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", "ROOM" + i, 10);
+        }
+        Admin admin = mock(Admin.class);
+        final String duplicateId = "DUPLICATE_ID";
+
+        // When: N threads concurrently create a section with the same ID (each with their own room/subject)
+        startSectionThreads(THREADS, i -> {
+            try {
+                mockMvc.perform(post("/sections")
+                        .sessionAttr("admin", admin)
+                        .param("sectionId", duplicateId)
+                        .param("subjectId", "SUBJ" + i)
+                        .param("days", Days.MTH.name())
+                        .param("start", "08:30")
+                        .param("end", "10:00")
+                        .param("roomName", "ROOM" + i));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Then: exactly one section exists for that ID, and its fields belong to one complete request
+        assertAll(
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM section WHERE section_id = ?", Integer.class, duplicateId);
+                    assertEquals(1, count, "only one section should exist for the ID");
+                },
+                () -> {
+                    Map<String, Object> row = jdbcTemplate.queryForMap(
+                            "SELECT subject_subject_id, room_name FROM section WHERE section_id = ?", duplicateId);
+                    String subj = (String) row.get("subject_subject_id");
+                    String room = (String) row.get("room_name");
+                    assertEquals(subj.replace("SUBJ", ""), room.replace("ROOM", ""), "data must belong to one request (no mixed fields)");
+                },
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM room_sections WHERE sections_section_id = ?", Integer.class, duplicateId);
+                    assertEquals(1, count, "only one room_sections link should exist for the ID");
+                }
+        );
+    }
+
     private void insertDefaultSubject() {
         jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", DEFAULT_SUBJECT_ID);
     }
