@@ -34,6 +34,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @SpringBootTest
 class SectionsControllerIT  {
 
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
  
@@ -67,8 +68,8 @@ class SectionsControllerIT  {
                         .param("sectionId", DEFAULT_SECTION_ID)
                         .param("subjectId", DEFAULT_SUBJECT_ID)
                         .param("days", Days.MTH.name())
-                        .param("start", "08:30")
-                        .param("end", "10:00")
+                        .param("start", TIME_0830.toString())
+                        .param("end", TIME_1000.toString())
                         .param("roomName", DEFAULT_ROOM_NAME))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("sections"))
@@ -78,8 +79,8 @@ class SectionsControllerIT  {
         assertSectionAndRoomSectionExist(DEFAULT_SECTION_ID,
                 DEFAULT_SUBJECT_ID,
                 Days.MTH,
-                LocalTime.of(8, 30),
-                LocalTime.of(10, 0),
+                TIME_0830,
+                TIME_1000,
                 DEFAULT_ROOM_NAME);
     }
 
@@ -100,8 +101,8 @@ class SectionsControllerIT  {
                         .param("sectionId", conflictingSectionId)
                         .param("subjectId", DEFAULT_SUBJECT_ID)
                         .param("days", Days.MTH.name())
-                        .param("start", "09:00")
-                        .param("end", "10:30")
+                        .param("start", TIME_0900.toString())
+                        .param("end", LocalTime.of(10, 30).toString())
                         .param("roomName", DEFAULT_ROOM_NAME))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("sections"))
@@ -143,8 +144,8 @@ class SectionsControllerIT  {
                         .param("sectionId", "SEC" + i)
                         .param("subjectId", DEFAULT_SUBJECT_ID)
                         .param("days", Days.MTH.name())
-                        .param("start", "08:30")
-                        .param("end", "10:00")
+                        .param("start", TIME_0830.toString())
+                        .param("end", TIME_1000.toString())
                         .param("roomName", DEFAULT_ROOM_NAME));
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -172,7 +173,7 @@ class SectionsControllerIT  {
         final int THREADS = 5;
         for (int i = 0; i < THREADS; i++) {
             jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", "SUBJ" + i);
-            jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", "ROOM" + i, 10);
+            jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", "ROOM" + i, DEFAULT_ROOM_CAPACITY);
         }
         Admin admin = mock(Admin.class);
         final String duplicateId = "DUPLICATEID";
@@ -185,8 +186,8 @@ class SectionsControllerIT  {
                         .param("sectionId", duplicateId)
                         .param("subjectId", "SUBJ" + i)
                         .param("days", Days.MTH.name())
-                        .param("start", "08:30")
-                        .param("end", "10:00")
+                        .param("start", TIME_0830.toString())
+                        .param("end", TIME_1000.toString())
                         .param("roomName", "ROOM" + i));
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -223,9 +224,9 @@ class SectionsControllerIT  {
         insertDefaultRoom();
         Admin admin = mock(Admin.class);
         String[][] slots = {
-                {"08:30", "10:00"},
-                {"10:00", "11:30"},
-                {"11:30", "13:00"}
+                {TIME_0830.toString(), TIME_1000.toString()},
+                {TIME_1000.toString(), LocalTime.of(11, 30).toString()},
+                {LocalTime.of(11, 30).toString(), LocalTime.of(13, 0).toString()}
         };
         final int THREADS = slots.length;
 
@@ -265,7 +266,7 @@ class SectionsControllerIT  {
     }
 
     private void insertDefaultRoom() {
-        jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", DEFAULT_ROOM_NAME, 10);
+        jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", DEFAULT_ROOM_NAME, DEFAULT_ROOM_CAPACITY);
     }
 
     private void insertDefaultSection() {
@@ -279,7 +280,7 @@ class SectionsControllerIT  {
                         "subject_subject_id) " +
                         "VALUES (?, ?, ?, ?, ?, ?, ?)",
                 DEFAULT_SECTION_ID, 0, Days.MTH.ordinal(),
-                LocalTime.of(8, 30), LocalTime.of(10, 0),
+                TIME_0830, TIME_1000,
                 DEFAULT_ROOM_NAME, DEFAULT_SUBJECT_ID);
 
         jdbcTemplate.update(
@@ -326,7 +327,7 @@ class SectionsControllerIT  {
             latch.countDown();
             for (Future<?> f : futures) {
                 try {
-                    f.get(30, TimeUnit.SECONDS);
+                    f.get(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
                 } catch (ExecutionException ignored) {
                 }
             }

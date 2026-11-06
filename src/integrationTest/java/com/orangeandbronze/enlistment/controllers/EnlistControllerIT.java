@@ -61,7 +61,7 @@ class EnlistControllerIT {
     void enlist_student_in_section() throws Exception {
         //Given: The DB has an existing student record & section record
         insertDefaultStudent();
-        insertNewDefaultSectionWithCapacity(10);
+        insertNewDefaultSectionWithCapacity(DEFAULT_ROOM_CAPACITY);
         Student student = studentRepository.findById(DEFAULT_STUDENT_NUMBER).orElseThrow();
 
         //When: POST method on path "/enlist" is invoked with
@@ -87,7 +87,7 @@ class EnlistControllerIT {
     void cancel_student_in_section() throws Exception {
         //Given: The DB has a student enlisted in an existing section
         insertDefaultStudent();
-        insertNewDefaultSectionWithCapacity(10);
+        insertNewDefaultSectionWithCapacity(DEFAULT_ROOM_CAPACITY);
         setDefaultSectionNumberOfStudents(1);
         insertStudentSectionAssociation(DEFAULT_STUDENT_NUMBER, DEFAULT_SECTION_ID);
         Student student = studentRepository.findById(DEFAULT_STUDENT_NUMBER).orElseThrow();
@@ -127,7 +127,7 @@ class EnlistControllerIT {
         jdbcTemplate.update(
                 "INSERT INTO section (section_id, number_of_students, days, start_time, end_time, room_name, subject_subject_id)" +
                         " VALUES (?, ?, ?, ?, ?, ?, ?)",
-                DEFAULT_SECTION_ID, 0, Days.MTH.ordinal(), LocalTime.of(9, 0), LocalTime.of(10, 0), roomName, DEFAULT_SUBJECT_ID);
+                DEFAULT_SECTION_ID, 0, Days.MTH.ordinal(), TIME_0900, TIME_1000, roomName, DEFAULT_SUBJECT_ID);
     }
 
     private void setDefaultSectionNumberOfStudents(int numberOfStudents) {
@@ -209,7 +209,7 @@ class EnlistControllerIT {
             latch.countDown();
             for (Future<?> f : futures) {
                 try {
-                    f.get(30, TimeUnit.SECONDS); // waits for the actual request to finish
+                    f.get(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS); // waits for the actual request to finish
                 } catch (ExecutionException e) {
                     // A capacity rejection may surface as an exception; the DB assertions decide pass/fail.
                 }

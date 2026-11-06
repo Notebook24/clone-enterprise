@@ -27,8 +27,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class SectionsControllerTest {
 
-    static final String START = "08:30";
-    static final String END = "10:00";
+    static final String START = TIME_0830.toString();
+    static final String END = TIME_1000.toString();
 
     @Mock SubjectRepository subjectRepo;
     @Mock AdminRepository adminRepo;
