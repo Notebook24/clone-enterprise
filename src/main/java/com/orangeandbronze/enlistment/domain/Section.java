@@ -2,13 +2,14 @@ package com.orangeandbronze.enlistment.domain;
 
 import jakarta.persistence.*;
 import jakarta.persistence.Entity;
+import org.springframework.data.domain.Persistable;
 import java.util.*;
 
 import static org.apache.commons.lang3.StringUtils.*;
 import static org.apache.commons.lang3.Validate.*;
 
 @Entity
-public class Section {
+public class Section implements Persistable<String> {
     @Id
     private final String sectionId;
     @ManyToOne
@@ -19,6 +20,9 @@ public class Section {
     private final Room room;
 
     private int numberOfStudents = 0;
+
+    @Transient
+    private boolean isNew = true;
 
     public Section(String sectionId, Subject subject, Schedule schedule, Room room) {
         notBlank(sectionId,
@@ -74,6 +78,22 @@ public class Section {
 
     public String getSectionId() {
         return sectionId;
+    }
+
+    @Override
+    public String getId() {
+        return sectionId;
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.isNew = false;
     }
 
     public Subject getSubject() {

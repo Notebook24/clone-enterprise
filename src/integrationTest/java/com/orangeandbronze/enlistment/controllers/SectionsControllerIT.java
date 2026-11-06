@@ -8,6 +8,8 @@ import org.testcontainers.junit.jupiter.*;
 
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.IntConsumer;
 
 import static com.orangeandbronze.enlistment.domain.Days.MTH;
 import static com.orangeandbronze.enlistment.domain.TestUtils.*;
@@ -105,7 +107,7 @@ class SectionsControllerIT  {
                 .andExpect(redirectedUrl("sections"))
                 .andExpect(flash().attributeExists("sectionExceptionMessage"));
 
-        // Then: Confliction section not saved,and total section count remains 1
+        // Then: Conflicting section not saved, and total section count remains unchanged
         assertAll(
                 () -> {
                     Integer count = jdbcTemplate.queryForObject(
@@ -121,6 +123,139 @@ class SectionsControllerIT  {
                     Integer countAfter = jdbcTemplate.queryForObject(
                             "SELECT COUNT(*) FROM section", Integer.class);
                     assertEquals(countBefore, countAfter, "section table count should remain unchanged");
+                }
+        );
+    }
+
+    @Test
+    void createSection_concurrently_same_room_overlapping_schedule() throws Exception {
+        // Given: Subject and Room exist in DB
+        insertDefaultSubject();
+        insertDefaultRoom();
+        Admin admin = mock(Admin.class);
+        final int THREADS = 5;
+
+        // When: N threads create sections with different IDs and overlapping schedules in the same room
+        startSectionThreads(THREADS, i -> {
+            try {
+                mockMvc.perform(post("/sections")
+                        .sessionAttr("admin", admin)
+                        .param("sectionId", "SEC" + i)
+                        .param("subjectId", DEFAULT_SUBJECT_ID)
+                        .param("days", Days.MTH.name())
+                        .param("start", "08:30")
+                        .param("end", "10:00")
+                        .param("roomName", DEFAULT_ROOM_NAME));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Then: exactly one section is saved in the room
+        assertAll(
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM section WHERE room_name = ?", Integer.class, DEFAULT_ROOM_NAME);
+                    assertEquals(1, count, "room should only have 1 section saved");
+                },
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM room_sections WHERE room_name = ?", Integer.class, DEFAULT_ROOM_NAME);
+                    assertEquals(1, count, "room_sections should only have 1 link");
+                }
+        );
+    }
+
+    @Test
+    void createSection_concurrently_same_id() throws Exception {
+        // Given: Multiple subjects and rooms in DB
+        final int THREADS = 5;
+        for (int i = 0; i < THREADS; i++) {
+            jdbcTemplate.update("INSERT INTO subject (subject_id) VALUES (?)", "SUBJ" + i);
+            jdbcTemplate.update("INSERT INTO room (name, capacity) VALUES (?, ?)", "ROOM" + i, 10);
+        }
+        Admin admin = mock(Admin.class);
+        final String duplicateId = "DUPLICATEID";
+
+        // When: N threads concurrently create a section with the same ID (each with their own room/subject)
+        startSectionThreads(THREADS, i -> {
+            try {
+                mockMvc.perform(post("/sections")
+                        .sessionAttr("admin", admin)
+                        .param("sectionId", duplicateId)
+                        .param("subjectId", "SUBJ" + i)
+                        .param("days", Days.MTH.name())
+                        .param("start", "08:30")
+                        .param("end", "10:00")
+                        .param("roomName", "ROOM" + i));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Then: exactly one section exists for that ID, and its fields belong to one complete request
+        assertAll(
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM section WHERE section_id = ?", Integer.class, duplicateId);
+                    assertEquals(1, count, "only one section should exist for the ID");
+                },
+                () -> {
+                    Map<String, Object> row = jdbcTemplate.queryForMap(
+                            "SELECT subject_subject_id, room_name FROM section WHERE section_id = ?", duplicateId);
+                    String subj = (String) row.get("subject_subject_id");
+                    String room = (String) row.get("room_name");
+                    assertEquals(subj.replace("SUBJ", ""), room.replace("ROOM", ""),
+                            "data must belong to one request (no mixed fields)");
+                },
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM room_sections WHERE sections_section_id = ?", Integer.class, duplicateId);
+                    assertEquals(1, count, "only one room_sections link should exist for the ID");
+                }
+        );
+    }
+
+    @Test
+    void createSection_concurrently_same_room_non_overlapping_schedule() throws Exception {
+        // Given: Subject and Room in DB
+        insertDefaultSubject();
+        insertDefaultRoom();
+        Admin admin = mock(Admin.class);
+        String[][] slots = {
+                {"08:30", "10:00"},
+                {"10:00", "11:30"},
+                {"11:30", "13:00"}
+        };
+        final int THREADS = slots.length;
+
+        // When: N threads concurrently create sections with non-overlapping schedules in the same room
+        startSectionThreads(THREADS, i -> {
+            try {
+                mockMvc.perform(post("/sections")
+                        .sessionAttr("admin", admin)
+                        .param("sectionId", "NONOVERLAP" + i)
+                        .param("subjectId", DEFAULT_SUBJECT_ID)
+                        .param("days", Days.MTH.name())
+                        .param("start", slots[i][0])
+                        .param("end", slots[i][1])
+                        .param("roomName", DEFAULT_ROOM_NAME));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Then: all N sections are saved in the room
+        assertAll(
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM section WHERE room_name = ?", Integer.class, DEFAULT_ROOM_NAME);
+                    assertEquals(THREADS, count, "all valid non-overlapping sections should be saved");
+                },
+                () -> {
+                    Integer count = jdbcTemplate.queryForObject(
+                            "SELECT COUNT(*) FROM room_sections WHERE room_name = ?", Integer.class, DEFAULT_ROOM_NAME);
+                    assertEquals(THREADS, count, "room_sections must link all created sections");
                 }
         );
     }
@@ -173,6 +308,31 @@ class SectionsControllerIT  {
                     assertEquals(1, count, "room_sections link does not exist");
                 }
         );
+    }
+
+    private void startSectionThreads(int threadCount, IntConsumer action) throws Exception {
+        ExecutorService pool = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Future<?>> futures = new ArrayList<>();
+        try {
+            for (int i = 0; i < threadCount; i++) {
+                final int index = i;
+                futures.add(pool.submit(() -> {
+                    latch.await();
+                    action.accept(index);
+                    return null;
+                }));
+            }
+            latch.countDown();
+            for (Future<?> f : futures) {
+                try {
+                    f.get(30, TimeUnit.SECONDS);
+                } catch (ExecutionException ignored) {
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+        }
     }
 
 }

@@ -1,5 +1,6 @@
 package com.orangeandbronze.enlistment.controllers;
 
+import com.orangeandbronze.enlistment.domain.DuplicateSectionException;
 import com.orangeandbronze.enlistment.domain.EnlistmentException;
 import com.orangeandbronze.enlistment.domain.Room;
 import com.orangeandbronze.enlistment.domain.Section;
@@ -47,7 +48,7 @@ class SectionsControllerTest {
         // Given a subject and a room that exist in their repositories
         Room room = newDefaultRoom();
         when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
-        when(roomRepo.findById(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(room));
+        when(roomRepo.findByIdForUpdate(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(room));
 
         // When the controller receives valid arguments
         controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
@@ -69,7 +70,7 @@ class SectionsControllerTest {
     void createSection_sets_success_flash_message_and_redirects() {
         // Given a subject and a room that exist
         when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
-        when(roomRepo.findById(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(newDefaultRoom()));
+        when(roomRepo.findByIdForUpdate(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(newDefaultRoom()));
 
         // When the section is created
         String view = controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
@@ -117,7 +118,7 @@ class SectionsControllerTest {
         Room room = newDefaultRoom();
         new Section("OtherSection", DEFAULT_SUBJECT, MTH830to10, room);
         when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
-        when(roomRepo.findById(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(room));
+        when(roomRepo.findByIdForUpdate(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(room));
 
         // When a section is created at an overlapping schedule in that room
         // Then the conflict propagates, so handleException() can show it
@@ -135,7 +136,7 @@ class SectionsControllerTest {
     void createSection_with_non_alphanumeric_section_id_throws_illegal_argument_and_saves_nothing() {
         // Given a subject and a room that exist
         when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
-        when(roomRepo.findById(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(newDefaultRoom()));
+        when(roomRepo.findByIdForUpdate(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(newDefaultRoom()));
 
         // When the section id is not alphanumeric
         // Then IllegalArgumentException is thrown; handleException() does not catch it, so the admin sees a 500 page
@@ -149,7 +150,7 @@ class SectionsControllerTest {
     void createSection_with_period_not_on_30_minute_boundary_throws_and_saves_nothing() {
         // Given a subject and a room that exist
         when(subjectRepo.findById(DEFAULT_SUBJECT_ID)).thenReturn(Optional.of(DEFAULT_SUBJECT));
-        when(roomRepo.findById(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(newDefaultRoom()));
+        when(roomRepo.findByIdForUpdate(DEFAULT_ROOM_NAME)).thenReturn(Optional.of(newDefaultRoom()));
 
         // When the start time is not on :00 or :30
         // Then InvalidTimeException is thrown (package-private, so check it by name)
@@ -157,6 +158,19 @@ class SectionsControllerTest {
                 () -> controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
                         "08:45", END, DEFAULT_ROOM_NAME, redirectAttrs));
         assertEquals("InvalidTimeException", exception.getClass().getSimpleName());
+        verify(sectionRepo, never()).save(any());
+    }
+
+    @Test
+    void createSection_with_existing_section_id_throws_and_saves_nothing() {
+        // Given a section id that already exists in the repository
+        when(sectionRepo.existsById(DEFAULT_SECTION_ID)).thenReturn(true);
+
+        // When creating a section with that existing id
+        // Then DuplicateSectionException is thrown and nothing is saved
+        assertThrows(DuplicateSectionException.class,
+                () -> controller.createSection(DEFAULT_SECTION_ID, DEFAULT_SUBJECT_ID, MTH,
+                        START, END, DEFAULT_ROOM_NAME, redirectAttrs));
         verify(sectionRepo, never()).save(any());
     }
 }
