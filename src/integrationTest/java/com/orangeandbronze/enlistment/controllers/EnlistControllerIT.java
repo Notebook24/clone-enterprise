@@ -5,16 +5,8 @@ import com.orangeandbronze.enlistment.repositories.*;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.*;
-import org.springframework.boot.test.autoconfigure.web.servlet.*;
-import org.springframework.boot.test.context.*;
 import org.springframework.jdbc.core.*;
 import org.springframework.test.web.servlet.*;
-import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -27,11 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
-@Testcontainers
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@AutoConfigureMockMvc
-@SpringBootTest
-class EnlistControllerIT {
+class EnlistControllerIT extends ControllerIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -42,20 +30,7 @@ class EnlistControllerIT {
     @Autowired
     private StudentRepository studentRepository;
 
-    private final static String TEST = "test";
     private static final int NUMBER_OF_STUDENTS = 5;
-
-    @Container
-    static final PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:14")
-            .withDatabaseName(TEST).withUsername(TEST).withPassword(TEST);
-
-    @DynamicPropertySource
-    static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", container::getJdbcUrl);
-        registry.add("spring.datasource.username", container::getUsername);
-        registry.add("spring.datasource.password", container::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create");
-    }
 
     @Test
     void enlist_student_in_section() throws Exception {
