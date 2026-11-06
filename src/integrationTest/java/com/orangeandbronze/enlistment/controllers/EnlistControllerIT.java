@@ -191,27 +191,4 @@ class EnlistControllerIT extends ControllerIntegrationTest {
         }
     }
 
-    private static class EnlistmentThread extends Thread {
-        private final Student student;
-        private final CountDownLatch latch;
-        private final MockMvc mockMvc;
-
-        public EnlistmentThread(Student student, CountDownLatch latch, MockMvc mockMvc) {
-            this.student = student;
-            this.latch = latch;
-            this.mockMvc = mockMvc;
-        }
-
-        @Override
-        public void run() {
-            try {
-                latch.await(); // The thread keeps waiting till it is informed
-                mockMvc.perform(post("/enlist").sessionAttr("student", student)
-                        .param("sectionId", DEFAULT_SECTION_ID).param("userAction", ENLIST.name()));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
 }
