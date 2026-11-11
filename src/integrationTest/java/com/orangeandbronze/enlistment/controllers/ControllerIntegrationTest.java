@@ -13,7 +13,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @AutoConfigureMockMvc
-@SpringBootTest
+@SpringBootTest(properties = "spring.liquibase.enabled=false")
 abstract class ControllerIntegrationTest {
 
     private static final String TEST = "test";
